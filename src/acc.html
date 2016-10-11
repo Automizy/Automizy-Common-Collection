@@ -1,0 +1,40 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="acc.css">
+    <style>
+        .automizy-chart-box {
+            width: 30%;
+            float: left;
+        }
+    </style>
+    <script src="vendor/requirejs/require.js"></script>
+    <script src="acc.js"></script>
+    <script>
+        window.automizyApiBaseUrl = "https://api-dev-admin.automizy.com";
+        window.automizyApiLoginPhp = "https://app-dev.automizy.com/php/login-local.php";
+        window.automizyApiRefreshPhp = "https://app-dev.automizy.com/php/refresh-local.php";
+
+        require([
+            "js/core/init",
+            "js/events/ready"
+        ], function () {
+            $ACC.init().ready(function () {
+
+                $AA.token().credentialsLogin({
+                    clientId: 'b6d3fc50ef2e46bd3aad7ede9e12fdc582fef042',
+                    clientSecret: 'bd4caf18ac1f5e019dc1a9f89cd629dd752370a0'
+                }).done(function(){
+
+                    alert('Ok');
+
+                })
+
+            })
+        });
+    </script>
+</head>
+<body>
+
+</body>
+</html>

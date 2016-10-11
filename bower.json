@@ -1,0 +1,45 @@
+{
+  "name": "automizy-common-collection",
+  "description": "Common elements for Automizy projects.",
+  "keywords":[
+    "automizy-common-collection",
+    "automizy-js",
+    "automizy-js-api",
+    "automizy",
+    "editor",
+    "free"
+  ],
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "build",
+    "AUTHORS.txt",
+    "Gruntfile.js",
+    "package.json"
+  ],
+  "moduleType":[
+    "globals",
+    "amd"
+  ],
+  "main":[
+    "src/acc.js",
+    "src/acc.css"
+  ],
+  "authors":[
+    { "name": "Gyorgy Reti", "email": "gyorgy.reti@automizy.com" },
+    { "name": "Dominik Sagi", "email": "dominik.sagi@automizy.com" },
+    { "name": "Abel Enekes", "email": "abel.enekes@automizy.com" },
+    { "name": "Gabor Koncz", "email": "gabor.koncz@automizy.com" }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/automizy/automizy-common-collection.git"
+  },
+  "dependencies": {
+    "jquery": "2.*",
+	"requirejs": "https://github.com/jrburke/requirejs.git#master",
+	"fontawesome": "*",
+    "automizy-js": "*",
+    "automizy-js-api": "*"
+  }
+}

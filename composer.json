@@ -1,0 +1,34 @@
+{
+    "name": "automizy/automizy-common-collection",
+    "description": "Common elements for Automizy projects.",
+    "type": "library",
+    "keywords": [
+        "automizy-common-collection",
+        "automizy-js",
+        "automizy-js-api",
+        "automizy",
+        "editor",
+        "free"
+    ],
+    "homepage": "http://developers.automizy.com/commoncollection",
+    "authors":[
+        { "name": "Gyorgy Reti", "email": "gyorgy.reti@automizy.com" },
+        { "name": "Dominik Sagi", "email": "dominik.sagi@automizy.com" },
+        { "name": "Abel Enekes", "email": "abel.enekes@automizy.com" },
+        { "name": "Gabor Koncz", "email": "gabor.koncz@automizy.com" }
+    ],
+    "support": {
+        "email": "gyorgy.reti@automizy.com",
+        "issues": "https://github.com/Automizy/Automizy-Common-Collection/issues",
+        "wiki": "https://github.com/Automizy/Automizy-Common-Collection/wiki",
+        "source": "https://github.com/Automizy/Automizy-Common-Collection",
+        "docs": "http://developers.automizy.com/commoncollection"
+    },
+    "prefer-stable": true,
+    "config": {
+        "vendor-dir":".composer"
+    },
+    "require-dev":{
+        "zendframework/zend-i18n":"2.*"
+    }
+}
