@@ -1,1 +1,0 @@
-php generateVersionsFile.php

@@ -1,6 +1,7 @@
 .automizy-common-collection-codehelp-elements {
     text-align: center;
 }
+
 .automizy-common-collection-codehelp-elements-element {
     border: 1px solid #000000;
     padding: 28px 28px 28px 28px;
@@ -17,16 +18,19 @@
 .automizy-common-collection-codehelp-elements-element.automizy-active {
     opacity:1;
 }
+
 .automizy-common-collection-codehelp-elements-element-text {
     font-size: 12px;
     padding: 18px 0 0 0;
 }
+
 .automizy-common-collection-codehelp-box {
     width: 100%;
     display: none;
     border-top: 2px dashed #8a8a8a;
     margin-top: 14px;
 }
+
 .automizy-common-collection-codehelp-box-td1 {
     text-align: left;
     vertical-align: top;
@@ -36,6 +40,7 @@
 .automizy-common-collection-codehelp-box-td2{
     padding-top:22px;
 }
+
 .automizy-common-collection-codehelp-box-td3 {
     text-align: right;
     vertical-align: top;
@@ -47,6 +52,8 @@
 .automizy-common-collection-codehelp-box-td3 .fa-times{
     cursor:pointer;
 }
+
+
 .automizy-code-content{
     width:100%;
     font-size:14px;

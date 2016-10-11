@@ -12,6 +12,9 @@ require([
     "js/events/layoutReady",
     "js/events/ready",
 
+    "js/modules/codeHelp",
+    "js/modules/codeHelpItHelp",
+
     "js/elements/layout"
 
 ], function () {

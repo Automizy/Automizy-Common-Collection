@@ -1,1 +1,0 @@
-npm install & bower update & grunt bower & pause
