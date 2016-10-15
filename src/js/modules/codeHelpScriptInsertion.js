@@ -127,6 +127,9 @@ define([
         if(typeof hash !== 'undefined'){
             t.d.hash = hash;
             t.d.$code.text('<script data-automizy-id="'+t.d.hash+'" src="//analytics.automizy.com/analytics.js" async></script>');
+            t.d.scriptInsertionItHelp.fields({
+                hash: t.hash()
+            });
             return t;
         }
         return t.d.hash;

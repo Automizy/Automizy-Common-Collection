@@ -57,6 +57,9 @@ define([
         if(typeof hash !== 'undefined'){
             t.d.hash = hash;
             t.d.$code.text('https://api.automizy.com/external/unbounce/'+t.d.hash);
+            t.d.itHelp.fields({
+                hash: t.hash()
+            });
             return t;
         }
         return t.d.hash;

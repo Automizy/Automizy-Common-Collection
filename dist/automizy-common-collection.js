@@ -735,6 +735,9 @@
         if(typeof hash !== 'undefined'){
             t.d.hash = hash;
             t.d.$code.text('<script data-automizy-id="'+t.d.hash+'" src="//analytics.automizy.com/analytics.js" async></script>');
+            t.d.scriptInsertionItHelp.fields({
+                hash: t.hash()
+            });
             return t;
         }
         return t.d.hash;
@@ -810,6 +813,9 @@
         if(typeof hash !== 'undefined'){
             t.d.hash = hash;
             t.d.$code.text('https://api.automizy.com/external/unbounce/'+t.d.hash);
+            t.d.itHelp.fields({
+                hash: t.hash()
+            });
             return t;
         }
         return t.d.hash;
