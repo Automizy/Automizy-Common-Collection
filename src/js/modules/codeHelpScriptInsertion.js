@@ -24,8 +24,8 @@ define([
         $('<div></div>').html($A.translate('Follow these steps:')).appendTo(t.d.$helpScriptInsertionPlugin);
         t.d.$helpScriptInsertionPluginList = $('<ol></ol>').appendTo(t.d.$helpScriptInsertionPlugin);
         $('<li></li>').html($A.translate('Login to your wordpress site')).appendTo(t.d.$helpScriptInsertionPluginList);
-        $('<li></li>').html($A.translate('Search for t.d plugin')).appendTo(t.d.$helpScriptInsertionPluginList);
-        $('<li></li>').html($A.translate('Install it and log in with your t.d user name and password')).appendTo(t.d.$helpScriptInsertionPluginList);
+        $('<li></li>').html($A.translate('Search for Automizy plugin')).appendTo(t.d.$helpScriptInsertionPluginList);
+        $('<li></li>').html($A.translate('Install it and log in with your Automizy user name and password')).appendTo(t.d.$helpScriptInsertionPluginList);
         $('<li></li>').html($A.translate('Now you can insert forms!')).appendTo(t.d.$helpScriptInsertionPluginList);
 
         t.d.scriptInsertionItHelp = $ACC.newCodeHelpItHelp()
