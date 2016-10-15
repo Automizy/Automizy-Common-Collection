@@ -121,6 +121,14 @@ define([
             t.d.dialog.open(func);
             return t;
         }
+
+        t.d.$mainBoxElementsUsePlugin.removeClass('automizy-active');
+        t.d.$mainBoxElementsDoItYourself.removeClass('automizy-active');
+        t.d.$mainBoxElementsAskForItHelp.removeClass('automizy-active');
+        t.d.$usePluginBox.hide();
+        t.d.$doItYourselfBox.hide();
+        t.d.$askForItHelpBox.hide();
+
         t.d.dialog.open();
         return t;
     };
@@ -131,6 +139,14 @@ define([
             return t;
         }
         return t.d.dialog.title();
+    };
+    p.description = function(description){
+        var t = this;
+        if(typeof description !== 'undefined'){
+            t.d.$mainBoxDescription.html(description);
+            return t;
+        }
+        return t.d.$mainBoxDescription.html();
     };
 
     p.pluginContent = function(content){
@@ -162,6 +178,9 @@ define([
     };
 
     $ACC.m.CodeHelp = CodeHelp;
+    $ACC.newCodeHelp = function () {
+        return new $ACC.m.CodeHelp();
+    };
 
     return $ACC.m.CodeHelp;
 });

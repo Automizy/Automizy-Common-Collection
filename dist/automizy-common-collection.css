@@ -1,3 +1,9 @@
+.automizy-common-collection-codehelp-description {
+    padding: 0 0 32px 0;
+}
+.automizy-common-collection-codehelp-description:empty {
+    padding: 0;
+}
 .automizy-common-collection-codehelp-elements {
     text-align: center;
 }

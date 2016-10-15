@@ -13,6 +13,7 @@ define([], function () {
             dir:'.',
             url:'https://app.automizy.com'
         };
+        t.modules = {};
         t.m = {};
         t.d = {};
     }();
