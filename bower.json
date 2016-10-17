@@ -9,7 +9,7 @@
     "editor",
     "free"
   ],
-  "private": true,
+  "private": false,
   "ignore": [
     "**/.*",
     "build",
