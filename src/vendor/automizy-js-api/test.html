@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Test</title>
+        <style>
+            button{display:block}
+        </style>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+        <script src="automizy.api.js"></script>
+        <script>
+            $(function(){
+                $('<button></button>').text('Set base URL to api-dev-admin').appendTo('body').click(function(){
+                    $AA.baseUrl('https://api-dev-admin.automizy.com');
+                    console.log('baseUrl set to: https://api-dev-admin.automizy.com');
+                });
+            });
+            $(function(){
+                $('<button></button>').text('Login to dev with clientId/clientSecret').appendTo('body').click(function(){
+                    console.log('Trying to login to dev...');
+                    $AA.token().credentialsLogin({
+                        clientId: 'b6d3fc50ef2e46bd3aad7ede9e12fdc582fef042',
+                        clientSecret: 'bd4caf18ac1f5e019dc1a9f89cd629dd752370a0'
+                    }).done(function(){
+                        console.log('Login to dev SUCCESS');
+                    });
+                });
+            });
+            $(function(){
+                $('<button></button>').text('Get segments').appendTo('body').click(function(){
+                    console.log('Trying to get the segments...');
+                    $AA.segments().get().done(function(data){
+                        console.log('Get segments SUCCESS: ', data);
+                    });
+                });
+            });
+            $(function(){
+                $('<button></button>').text('Logout').appendTo('body').click(function(){
+                    console.log('Logout');
+                    $AA.token().logout();
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <h1>OPEN CONSOLE</h1>
+    </body>
+</html>
