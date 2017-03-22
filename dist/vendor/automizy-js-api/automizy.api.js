@@ -4,6 +4,7 @@ var $AA = {};
     $AA = new function () {
         var t = this;
         t.xhr = {};
+        t.url = {};
         t.d = {
             version: '0.1.0',
             login:false,
@@ -36,46 +37,91 @@ var $AA = {};
             }
         };
 
-        var baseUrl = window.automizyApiBaseUrl || "https://api.automizy.com";
-        var apiLoginPhp = window.automizyApiLoginPhp || "https://app.automizy.com/php/login.php";
-        var apiRefreshPhp = window.automizyApiRefreshPhp || "https://app.automizy.com/php/refresh.php";
-        t.u = {
-            base:baseUrl,
-            loginPhp: apiLoginPhp,
-            refreshPhp: apiRefreshPhp,
-            oauth: baseUrl + '/oauth',
-            segments: baseUrl + '/segments',
-            campaigns: baseUrl + '/campaigns',
-            splitTests: baseUrl + '/split-tests',
-            newsletters: baseUrl + '/newsletters',
-            automationEmails: baseUrl + '/automations/emails',
-            contacts: baseUrl + '/contacts',
-            contactTags: baseUrl + '/contacts/tags',
-            customFields: baseUrl + '/custom-fields',
-            users: baseUrl + '/users',
-            jobs: baseUrl + '/jobs',
-            webhooks: baseUrl + '/webhooks',
-            images: baseUrl + '/images',
-            templates: baseUrl + '/templates',
-            forms: baseUrl + '/forms',
-            automations: baseUrl + '/automations',
-            account: baseUrl + '/account',
-            accountStatistics: baseUrl + '/account/statistics',
-            contactImports: baseUrl + '/contact-imports',
-            tags: baseUrl + '/tags',
-            clients: baseUrl + '/clients',
-            updates: baseUrl + '/updates',
-            plugins: baseUrl + '/plugins',
-            milestones: baseUrl + '/milestones',
-            leadScores: baseUrl + '/lead-scores',
-            unbounceForms: baseUrl + '/external/unbounce/forms',
-            autoDetectedForms: baseUrl + '/external/unbounce/forms',
 
-            emailPreview: baseUrl + '/email-preview'
+        var baseApiUrl = window.automizyApiBaseUrl || window.AutomizyBaseApiUrl || "https://api.automizy.com";
+        var loginApiUrl = window.automizyApiLoginPhp || window.AutomizyLoginApiUrl || "https://login.automizy.com/api/login.php";
+        var refreshApiUrl = window.automizyApiRefreshPhp || window.AutomizyRefreshApiUrl || "https://login.automizy.com/api/refresh.php";
+
+        t.u = {
+            //base:baseApiUrl,
+            //loginPhp: loginApiUrl,
+            //refreshPhp: refreshApiUrl,
+            //oauth: baseUrl + '/oauth',
+            //segments: baseUrl + '/segments',
+            //campaigns: baseUrl + '/campaigns',
+            //splitTests: baseUrl + '/split-tests',
+            //newsletters: baseUrl + '/newsletters',
+            //automationEmails: baseUrl + '/automations/emails',
+            //contacts: baseUrl + '/contacts',
+            //contactTags: baseUrl + '/contacts/tags',
+            //contactsTagManager: baseUrl + '/contacts/tag-manager',
+            //customFields: baseUrl + '/custom-fields',
+            //users: baseUrl + '/users',
+            //jobs: baseUrl + '/jobs',
+            //webhooks: baseUrl + '/webhooks',
+            //images: baseUrl + '/images',
+            //templates: baseUrl + '/templates',
+            //forms: baseUrl + '/forms',
+            //automations: baseUrl + '/automations',
+            //account: baseUrl + '/account',
+            //accountStatistics: baseUrl + '/account/statistics',
+            //contactImports: baseUrl + '/contact-imports',
+            //tags: baseUrl + '/tags',
+            //clients: baseUrl + '/clients',
+            //updates: baseUrl + '/updates',
+            //plugins: baseUrl + '/plugins',
+            //milestones: baseUrl + '/milestones',
+            //leadScores: baseUrl + '/lead-scores',
+            //unbounceForms: baseUrl + '/external/unbounce/forms',
+            //autoDetectedForms: baseUrl + '/forms/autodetect',
+            //invoices: baseUrl + '/invoices',
+
+            //emailPreview: baseUrl + '/email-preview'
         };
 
         t.m = [];
     }();
+})();
+
+(function(){
+
+    $AA.baseUrl = function(url){
+        if(typeof url !== 'undefined') {
+            $AA.url.base = url;
+            return $AA;
+        }
+        return $AA.url.base;
+    };
+
+    $AA.createUrl = function(name){
+        if(typeof $AA.url[name] === 'undefined'){
+            $AA.url[name] = {
+                urlOrApiName:'',
+                useBaseUrl:false
+            };
+        }
+        $AA[name + 'Url'] = function(urlOrApiName, useBaseUrl){
+            if(typeof urlOrApiName !== 'undefined') {
+                $AA.url[name].urlOrApiName = urlOrApiName;
+                $AA.url[name].useBaseUrl = useBaseUrl || false;
+                return $AA;
+            }
+            return $AA.url[name].useBaseUrl ? ($AA.baseUrl() + '/' + $AA.url[name].urlOrApiName) : $AA.url[name].urlOrApiName;
+        };
+        return $AA[name + 'Url'];
+    };
+
+    $AA.baseUrl(window.automizyApiBaseUrl || window.AutomizyBaseApiUrl || "https://api.automizy.com");
+
+    $AA.createUrl('login')(window.automizyApiLoginPhp || window.AutomizyLoginApiUrl || "https://login.automizy.com/api/login.php");
+    $AA.createUrl('refresh')(window.automizyApiRefreshPhp || window.AutomizyRefreshApiUrl || "https://login.automizy.com/api/refresh.php");
+    $AA.createUrl('oauth')("oauth", true);
+    $AA.createUrl('images')("images", true);
+    $AA.createUrl('emaileditorImages')("images?directory=emaileditor", true);
+    $AA.createUrl('emailPreview')("email-preview", true);
+
+    $AA.createUrl('loginPage')(window.AutomizyLoginPageUrl || "https://login.automizy.com");
+
 })();
 
 (function(){
@@ -316,10 +362,11 @@ var $AA = {};
         var t = this;
         return $.ajax({
             type: "POST",
-            url: $AA.u.refreshPhp,
+            url: $AA.refreshUrl(),
             data: {
                 refresh_token: $AA.cookie.get('AutomizyApiRefreshToken'),
-                username: $AA.cookie.get('AutomizyApiUsername')
+                username: $AA.cookie.get('AutomizyApiUsername'),
+                admin:($AA.cookie.get('automizyAdminUser') == 1)
             },
             success: function (data, textStatus, jqXHR) {
                 t.set(data);
@@ -402,6 +449,7 @@ var $AA = {};
         }
 
         $AA.cookie.set('AutomizyApiUsername', obj.username, t.cookieAttributes());
+        $AA.cookie.set('automizyLoginPageUrl', $AA.loginPageUrl(), t.cookieAttributes());
 
         var data = {
             username: obj.username,
@@ -413,7 +461,7 @@ var $AA = {};
 
         return $.ajax({
             type: "POST",
-            url: $AA.u.loginPhp,
+            url: $AA.loginUrl(),
             data: data,
             success: function (data, textStatus, jqXHR) {
                 t.set(data);
@@ -450,7 +498,7 @@ var $AA = {};
 
         return $.ajax({
             type: "POST",
-            url: $AA.u.oauth,
+            url: $AA.oauthUrl(),
             data: data,
             success: function (data, textStatus, jqXHR) {
                 t.set(data);
@@ -479,10 +527,12 @@ var $AA = {};
 
     p.cookieAttributes = function(){
         var obj = {};
-        if(location.href.indexOf('.protopmail.com') >= 0){
+        if(location.host.indexOf('.protopmail.com') >= 0){
             obj.domain = '.protopmail.com';
-        }else if(location.href.indexOf('.automizy.com') >= 0){
+        }else if(location.host.indexOf('.automizy.com') >= 0){
             obj.domain = '.automizy.com';
+        }else{
+            obj.domain = location.hostname;
         }
         return obj;
     };
@@ -511,7 +561,7 @@ var $AA = {};
 })();
 
 (function(){
-    $AA.initBasicFunctions = function (module, moduleName) {
+    $AA.initBasicFunctions = function (module, moduleName, settings) {
 
         var module = module || false;
         if (module === false) {
@@ -523,12 +573,16 @@ var $AA = {};
         var moduleNameLower = moduleName.toLowerCase();
         var moduleNameLowerFirst = moduleName.charAt(0).toLowerCase() + moduleName.slice(1);
 
+        var settings = settings || {};
+
 
         var p = module.prototype;
 
         p.init = p.init || function () {
                 var t = this;
-                
+
+                t.d = t.d || {};
+                t.d.option = t.d.option || {};
                 t.d.xhr = t.d.xhr || {};
                 t.d.xhr.get = false;
                 t.d.xhr.insert = false;
@@ -602,8 +656,6 @@ var $AA = {};
                     t.order(obj.order);
                 if (typeof obj.links !== 'undefined')
                     t.links(obj.links);
-                if (typeof obj.url !== 'undefined')
-                    t.url(obj.url);
             };
 
         p.setOptions = p.setOptions || function (obj) {
@@ -681,7 +733,7 @@ var $AA = {};
                 }
 
                 t.d.xhr.get = $.ajax({
-                    url: t.d.url + t.d.urlSuffix,
+                    url: $AA[moduleNameLowerFirst + 'Url']() + t.d.urlSuffix,
                     type: 'GET',
                     dataType: 'json',
                     async: async,
@@ -742,7 +794,7 @@ var $AA = {};
                         }, false);
                         return xhr;
                     },
-                    url: t.d.url + t.d.urlSuffix,
+                    url: $AA[moduleNameLowerFirst + 'Url']() + t.d.urlSuffix,
                     type: 'GET',
                     //dataType: 'json',
                     async: async,
@@ -772,7 +824,7 @@ var $AA = {};
                 var data = obj;
 
                 t.d.xhr.insert = $.ajax({
-                    url: t.d.url + t.d.urlSuffix,
+                    url: $AA[moduleNameLowerFirst + 'Url']() + t.d.urlSuffix,
                     type: 'POST',
                     dataType: 'json',
                     async: async,
@@ -805,7 +857,7 @@ var $AA = {};
                 delete data.id;
 
                 t.d.xhr.update = $.ajax({
-                    url: t.d.url + '/' + id + t.d.urlSuffix,
+                    url: $AA[moduleNameLowerFirst + 'Url']() + '/' + id + t.d.urlSuffix,
                     type: 'PATCH',
                     dataType: 'json',
                     async: async,
@@ -835,7 +887,7 @@ var $AA = {};
                 }
 
                 t.d.xhr.delete = $.ajax({
-                    url: t.d.url + '/' + id + t.d.urlSuffix,
+                    url: $AA[moduleNameLowerFirst + 'Url']() + '/' + id + t.d.urlSuffix,
                     type: 'DELETE',
                     dataType: 'json',
                     async: async,
@@ -874,7 +926,7 @@ var $AA = {};
         p.getAll = p.getAll || function () {
                 var t = this;
                 t.d.xhr.getAll = $.ajax({
-                    url: t.d.url + t.d.urlSuffix,
+                    url: $AA[moduleNameLowerFirst + 'Url']() + t.d.urlSuffix,
                     type: 'GET',
                     dataType: 'json',
                     headers: {Authorization: 'Bearer ' + $AA.token().get()},
@@ -898,7 +950,7 @@ var $AA = {};
                 }
 
                 t.d.xhr.getRecordById = $.ajax({
-                    url: t.d.url + '/' + id + t.d.urlSuffix,
+                    url: $AA[moduleNameLowerFirst + 'Url']() + '/' + id + t.d.urlSuffix,
                     type: 'GET',
                     dataType: 'json',
                     data: data,
@@ -911,7 +963,7 @@ var $AA = {};
                 var t = this;
                 var fieldTree = fieldName.split('.');
                 t.d.xhr.getFieldById = $.ajax({
-                    url: t.d.url + '/' + id + t.d.urlSuffix,
+                    url: $AA[moduleNameLowerFirst + 'Url']() + '/' + id + t.d.urlSuffix,
                     type: 'GET',
                     dataType: 'json',
                     data: {fields: fieldTree[0], links: ''},
@@ -933,7 +985,7 @@ var $AA = {};
                 var t = this;
                 var fieldTree = nameFieldName.split('.');
                 t.d.xhr.getAllIdNamePair = $.ajax({
-                    url: t.d.url + t.d.urlSuffix,
+                    url: $AA[moduleNameLowerFirst + 'Url']() + t.d.urlSuffix,
                     type: 'GET',
                     dataType: 'json',
                     data: {fields: 'id,' + fieldTree[0], links: ''},
@@ -1066,6 +1118,12 @@ var $AA = {};
                 }
                 return t.d.option.set;
             };
+        p.url = p.url || function(){
+                return $AA[moduleNameLowerFirst+'Url'].apply(this, arguments);
+            };
+
+
+        $AA.createUrl(moduleNameLowerFirst)(settings.url || 'ping', !(typeof settings.useBaseUrl !== 'undefined' && settings.useBaseUrl === false));
 
         $AA.m[moduleName] = module;
         $AA[moduleNameLowerFirst] = function (obj) {
@@ -1143,16 +1201,9 @@ var $AA = {};
 (function(){
     var Segments = function (obj) {
         var t = this;
-        t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.segments
-        };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
@@ -1160,7 +1211,7 @@ var $AA = {};
     p.calculateByArray = function(arr){
         var t = this;
         return $.ajax({
-            url: t.d.url+'/calculate' + t.d.urlSuffix,
+            url: t.url()+'/calculate' + t.d.urlSuffix,
             type: 'GET',
             data: arr,
             dataType: 'json',
@@ -1168,11 +1219,10 @@ var $AA = {};
             error: $AA.token().error()
         });
     };
-/**/
     p.calculateById = function(id){
         var t = this;
         return $.ajax({
-            url: t.d.url+'/'+id+'/calculate' + t.d.urlSuffix,
+            url: t.url()+'/'+id+'/calculate' + t.d.urlSuffix,
             type: 'GET',
             data: {
                 waitForResponse:true,
@@ -1186,7 +1236,7 @@ var $AA = {};
     p.calculateAndSave = function(id){
         var t = this;
         return $.ajax({
-            url: t.d.url+'/'+id+'/calculate' + t.d.urlSuffix,
+            url: t.url()+'/'+id+'/calculate' + t.d.urlSuffix,
             type: 'GET',
             data: {
                 waitForResponse:true,
@@ -1198,23 +1248,19 @@ var $AA = {};
         });
     };
     
-    $AA.initBasicFunctions(Segments, "Segments");
+    $AA.initBasicFunctions(Segments, "Segments", {
+        url:'segments',
+        useBaseUrl:true
+    });
 
 })();
 
 (function(){
     var Campaigns = function (obj) {
         var t = this;
-        t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.campaigns
-        };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
@@ -1232,7 +1278,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/opens' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/opens' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1252,7 +1298,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/clicks' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/clicks' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1272,7 +1318,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/shares' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/shares' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1292,7 +1338,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/unsubscribes' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/unsubscribes' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1312,7 +1358,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/bounces' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/bounces' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1332,7 +1378,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/geo-locations' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/geo-locations' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1355,7 +1401,7 @@ var $AA = {};
             data.step = step;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/opens' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/opens' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1378,7 +1424,7 @@ var $AA = {};
             data.step = step;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/clicks' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/clicks' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1399,7 +1445,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/opens' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/opens' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1420,7 +1466,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/clicks' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/clicks' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1441,7 +1487,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/opens' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/opens' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1462,7 +1508,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/clicks' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/clicks' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1483,7 +1529,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/opens' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/opens' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1504,7 +1550,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/clicks' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/clicks' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1525,7 +1571,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/opens' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/opens' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1546,7 +1592,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/clicks' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/clicks' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1567,7 +1613,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/opens' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/opens' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1588,7 +1634,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/clicks' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/clicks' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1609,7 +1655,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/opens' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/opens' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1630,7 +1676,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/clicks' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/clicks' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1653,7 +1699,7 @@ var $AA = {};
             data.limit = limit;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/domains' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/domains' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1680,7 +1726,7 @@ var $AA = {};
             data.uniqueContacts = uniqueContacts;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/opens' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/opens' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1707,7 +1753,7 @@ var $AA = {};
             data.uniqueContacts = uniqueContacts;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/clicks' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/clicks' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1728,7 +1774,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/opens' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/opens' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1749,7 +1795,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/clicks' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/clicks' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1769,7 +1815,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/heat-map' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/heat-map' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1780,7 +1826,7 @@ var $AA = {};
     p.getLinksById = function (id) {
         var t = this;
         return $.ajax({
-            url: t.d.url + '/' + id + '/links',
+            url: t.url() + '/' + id + '/links',
             type: 'GET',
             dataType: 'json',
             headers: {Authorization: 'Bearer ' + $AA.token().get()},
@@ -1790,7 +1836,7 @@ var $AA = {};
     p.getCombinedById = function (id, data) {
         var t = this;
         return $.ajax({
-            url: t.d.url + '/' + id + '/combined',
+            url: t.url() + '/' + id + '/combined',
             type: 'POST',
             dataType: 'json',
             data:data,
@@ -1801,7 +1847,7 @@ var $AA = {};
     p.getStatisticsToPdfById = function (id) {
         var t = this;
         return $.ajax({
-            url: t.d.url + '/' + id,
+            url: t.url() + '/' + id,
             type: 'GET',
             headers: {
                 Authorization: 'Bearer ' + $AA.token().get(),
@@ -1811,7 +1857,10 @@ var $AA = {};
         });
     };
     
-    $AA.initBasicFunctions(Campaigns, "Campaigns");
+    $AA.initBasicFunctions(Campaigns, "Campaigns", {
+        url:'campaigns',
+        useBaseUrl:true
+    });
     p.send = p.insert;
 
 })();
@@ -1819,16 +1868,9 @@ var $AA = {};
 (function(){
     var SplitTests = function (obj) {
         var t = this;
-        t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.splitTests
-        };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
@@ -1846,7 +1888,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/opens' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/opens' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1866,7 +1908,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/clicks' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/clicks' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1886,7 +1928,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/shares' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/shares' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1906,7 +1948,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/unsubscribes' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/unsubscribes' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1926,7 +1968,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/bounces' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/bounces' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1946,7 +1988,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/geo-locations' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/geo-locations' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1969,7 +2011,7 @@ var $AA = {};
             data.step = step;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/opens' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/opens' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -1992,7 +2034,7 @@ var $AA = {};
             data.step = step;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/clicks' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/clicks' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -2013,7 +2055,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/opens' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/opens' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -2034,7 +2076,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/clicks' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/clicks' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -2055,7 +2097,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/opens' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/opens' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -2076,7 +2118,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/clicks' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/clicks' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -2097,7 +2139,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/opens' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/opens' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -2118,7 +2160,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/clicks' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/clicks' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -2139,7 +2181,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/opens' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/opens' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -2160,7 +2202,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/clicks' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/clicks' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -2169,7 +2211,10 @@ var $AA = {};
         });
     };
     
-    $AA.initBasicFunctions(SplitTests, "SplitTests");
+    $AA.initBasicFunctions(SplitTests, "SplitTests", {
+        url:'split-tests',
+        useBaseUrl:true
+    });
     p.send = p.insert;
 
 })();
@@ -2177,16 +2222,9 @@ var $AA = {};
 (function(){
     var Newsletters = function (obj) {
         var t = this;
-        t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.newsletters
-        };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
     var p = Newsletters.prototype;
@@ -2213,7 +2251,10 @@ var $AA = {};
 
 
 
-    $AA.initBasicFunctions(Newsletters, "Newsletters");
+    $AA.initBasicFunctions(Newsletters, "Newsletters", {
+        url:'newsletters',
+        useBaseUrl:true
+    });
 
 })();
 
@@ -2221,16 +2262,11 @@ var $AA = {};
     var AutomationEmails = function (obj) {
         var t = this;
         t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.automationEmails,
             parentName: 'emails'
         };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
     var p = AutomationEmails.prototype;
@@ -2256,24 +2292,19 @@ var $AA = {};
     };
 
 
-
-    $AA.initBasicFunctions(AutomationEmails, "AutomationEmails");
+    $AA.initBasicFunctions(AutomationEmails, "AutomationEmails", {
+        url:'automations/emails',
+        useBaseUrl:true
+    });
 
 })();
 
 (function(){
     var Contacts = function (obj) {
         var t = this;
-        t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.contacts
-        };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
@@ -2282,7 +2313,7 @@ var $AA = {};
     p.getActivitiesById = function(id){
         var t = this;
         return $.ajax({
-            url: t.d.url + '/' + id + '/activities',
+            url: t.url() + '/' + id + '/activities',
             type: 'GET',
             dataType: 'json',
             headers: {Authorization: 'Bearer ' + $AA.token().get()},
@@ -2290,56 +2321,49 @@ var $AA = {};
         });
     };
     
-    $AA.initBasicFunctions(Contacts, "Contacts");
+    $AA.initBasicFunctions(Contacts, "Contacts", {
+        url:'contacts',
+        useBaseUrl:true
+    });
 
 })();
 
 (function(){
     var CustomFields = function (obj) {
         var t = this;
-        t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.customFields
-        };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
     var p = CustomFields.prototype;
 
     
-    $AA.initBasicFunctions(CustomFields, "CustomFields");
+    $AA.initBasicFunctions(CustomFields, "CustomFields", {
+        url:'custom-fields',
+        useBaseUrl:true
+    });
 
 })();
 
 (function(){
     var Users = function (obj) {
         var t = this;
-        t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.users
-        };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
     var p = Users.prototype;
 
-    p.switch = function(user){
+    p.switch = function(site){
+        var t = this;
         return $.ajax({
-            url: $AA.u.users + '/switch-site',
+            url: t.url() + '/switch-site',
             type: 'POST',
-            data:{site:user},
+            data:{site:site},
             dataType: 'json',
             headers: {Authorization: 'Bearer ' + $AA.token().get()}
         }).done(function(data) {
@@ -2350,69 +2374,57 @@ var $AA = {};
         });
     };
     
-    $AA.initBasicFunctions(Users, "Users");
+    $AA.initBasicFunctions(Users, "Users", {
+        url:'users',
+        useBaseUrl:true
+    });
 
 })();
 
 (function(){
     var Jobs = function (obj) {
         var t = this;
-        t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.jobs
-        };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
     var p = Jobs.prototype;
 
 
-    $AA.initBasicFunctions(Jobs, "Jobs");
+    $AA.initBasicFunctions(Jobs, "Jobs", {
+        url:'jobs',
+        useBaseUrl:true
+    });
 
 })();
 
 (function(){
     var Webhooks = function (obj) {
         var t = this;
-        t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.webhooks
-        };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
     var p = Webhooks.prototype;
 
 
-    $AA.initBasicFunctions(Webhooks, "Webhooks");
+    $AA.initBasicFunctions(Webhooks, "Webhooks", {
+        url:'webhooks',
+        useBaseUrl:true
+    });
 
 })();
 
 (function(){
     var Templates = function (obj) {
         var t = this;
-        t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.templates
-        };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
     var p = Templates.prototype;
@@ -2436,23 +2448,19 @@ var $AA = {};
     };
 
     
-    $AA.initBasicFunctions(Templates, "Templates");
+    $AA.initBasicFunctions(Templates, "Templates", {
+        url:'templates',
+        useBaseUrl:true
+    });
 
 })();
 
 (function(){
     var Forms = function (obj) {
         var t = this;
-        t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.forms
-        };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
@@ -2471,7 +2479,7 @@ var $AA = {};
             data.to = to;
         }
         return $.ajax({
-            url: t.d.url + '/' + id + '/conversion' + t.d.urlSuffix,
+            url: t.url() + '/' + id + '/conversion' + t.d.urlSuffix,
             type: 'GET',
             dataType: 'json',
             data: data,
@@ -2481,7 +2489,10 @@ var $AA = {};
     };
 
     
-    $AA.initBasicFunctions(Forms, "Forms");
+    $AA.initBasicFunctions(Forms, "Forms", {
+        url:'forms',
+        useBaseUrl:true
+    });
 
 })();
 
@@ -2489,9 +2500,6 @@ var $AA = {};
     var Automations = function (obj) {
         var t = this;
         t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.automations,
             xhr:{}
         };
         t.init();
@@ -2502,10 +2510,7 @@ var $AA = {};
         t.d.xhr.acceptDraft = false;
         t.d.xhr.discardDraft = false;
 
-
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
@@ -2514,7 +2519,7 @@ var $AA = {};
     p.getNodesById = function(automationId){
         var t = this;
         t.d.xhr.getNodesById = $.ajax({
-            url: $AA.u.automations + '/' + automationId + '/nodes',
+            url: $AA.automationsUrl() + '/' + automationId + '/nodes',
             type: 'GET',
             dataType: 'json',
             headers: {Authorization: 'Bearer ' + $AA.token().get()},
@@ -2525,7 +2530,7 @@ var $AA = {};
     p.insertNode = function(obj, automationId){
         var t = this;
         t.d.xhr.insertNode = $.ajax({
-            url: $AA.u.automations + '/' + automationId + '/nodes',
+            url: $AA.automationsUrl() + '/' + automationId + '/nodes',
             type: 'POST',
             dataType: 'json',
             data: obj,
@@ -2545,7 +2550,7 @@ var $AA = {};
             keepParameter = '?keep='+keep
         }
         t.d.xhr.deleteNode = $.ajax({
-            url: $AA.u.automations + '/' + automationId + '/nodes/' + nodeId + keepParameter,
+            url: $AA.automationsUrl() + '/' + automationId + '/nodes/' + nodeId + keepParameter,
             type: 'DELETE',
             dataType: 'json',
             headers: {Authorization: 'Bearer ' + $AA.token().get()},
@@ -2556,7 +2561,7 @@ var $AA = {};
     p.updateNode = function(obj, automationId, nodeId){
         var t = this;
         t.d.xhr.updateNode = $.ajax({
-            url: $AA.u.automations + '/' + automationId + '/nodes/' + nodeId,
+            url: $AA.automationsUrl() + '/' + automationId + '/nodes/' + nodeId,
             type: 'PATCH',
             dataType: 'json',
             data: obj,
@@ -2568,7 +2573,7 @@ var $AA = {};
     p.acceptDraft = function(automationId){
         var t = this;
         t.d.xhr.acceptDraft = $.ajax({
-            url: $AA.u.automations + '/' + automationId + '/accept-draft',
+            url: $AA.automationsUrl() + '/' + automationId + '/accept-draft',
             type: 'POST',
             dataType: 'json',
             headers: {Authorization: 'Bearer ' + $AA.token().get()},
@@ -2579,7 +2584,7 @@ var $AA = {};
     p.discardDraft = function(automationId){
         var t = this;
         t.d.xhr.discardDraft = $.ajax({
-            url: $AA.u.automations + '/' + automationId + '/discard-draft',
+            url: $AA.automationsUrl() + '/' + automationId + '/discard-draft',
             type: 'POST',
             dataType: 'json',
             headers: {Authorization: 'Bearer ' + $AA.token().get()},
@@ -2590,7 +2595,7 @@ var $AA = {};
     p.getCampaigns = function(){
         var t = this;
         return $.ajax({
-            url: t.d.url + '/get-campaigns',
+            url: $AA.automationsUrl() + '/get-campaigns',
             type: 'GET',
             dataType: 'json',
             headers: {Authorization: 'Bearer ' + $AA.token().get()},
@@ -2620,24 +2625,19 @@ var $AA = {};
         return $AA.xhr[moduleNameLowerFirst];
     };
 
-    
-    $AA.initBasicFunctions(Automations, "Automations");
+    $AA.initBasicFunctions(Automations, "Automations", {
+        url:'automations',
+        useBaseUrl:true
+    });
 
 })();
 
 (function(){
     var ContactImports = function (obj) {
         var t = this;
-        t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.contactImports
-        };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
@@ -2646,7 +2646,7 @@ var $AA = {};
     p.getContactsByIdAndType = function(id, type){
         var t = this;
         return $.ajax({
-            url: t.d.url + '/' + id + '/' + type,
+            url: t.url() + '/' + id + '/' + type,
             type: 'GET',
             dataType: 'json',
             headers: {Authorization: 'Bearer ' + $AA.token().get()},
@@ -2666,7 +2666,10 @@ var $AA = {};
         return this.getContactsByIdAndType(id, 'unsubscribed-errors');
     };
     
-    $AA.initBasicFunctions(ContactImports, "ContactImports");
+    $AA.initBasicFunctions(ContactImports, "ContactImports", {
+        url:'contact-imports',
+        useBaseUrl:true
+    });
 
 })();
 
@@ -2676,7 +2679,7 @@ var $AA = {};
     var p = Tags.prototype;
     p.get = function(){
         return $.ajax({
-            url: $AA.u.tags,
+            url: $AA.tagsUrl(),
             type: 'GET',
             dataType: 'json',
             headers: {Authorization: 'Bearer ' + $AA.token().get()}
@@ -2685,6 +2688,7 @@ var $AA = {};
 
     /* No Rest-Api, so the basic functions are disabled */
 
+    $AA.createUrl('tags')('tags', true);
     $AA.m['Tags'] = Tags;
     $AA['tags'] = function (obj) {
         var t = new Tags(obj);
@@ -2696,46 +2700,38 @@ var $AA = {};
 (function(){
     var Milestones = function (obj) {
         var t = this;
-        t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.milestones
-        };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
     var p = Milestones.prototype;
 
 
-    $AA.initBasicFunctions(Milestones, "Milestones");
+    $AA.initBasicFunctions(Milestones, "Milestones", {
+        url:'milestones',
+        useBaseUrl:true
+    });
 
 })();
 
 (function(){
     var LeadScores = function (obj) {
         var t = this;
-        t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.leadScores
-        };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
     var p = LeadScores.prototype;
 
 
-    $AA.initBasicFunctions(LeadScores, "LeadScores");
+    $AA.initBasicFunctions(LeadScores, "LeadScores", {
+        url:'lead-scores',
+        useBaseUrl:true
+    });
 
 })();
 
@@ -2743,23 +2739,21 @@ var $AA = {};
     var ContactTags = function (obj) {
         var t = this;
         t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.contactTags,
             hasEmbedded:false,
             hasId:false
         };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
     var p = ContactTags.prototype;
     
-    $AA.initBasicFunctions(ContactTags, "ContactTags");
+    $AA.initBasicFunctions(ContactTags, "ContactTags", {
+        url:'contacts/tags',
+        useBaseUrl:true
+    });
 
 })();
 
@@ -2767,23 +2761,21 @@ var $AA = {};
     var UnbounceForms = function (obj) {
         var t = this;
         t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.unbounceForms,
             hasEmbedded:false
         };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
     var p = UnbounceForms.prototype;
 
     
-    $AA.initBasicFunctions(UnbounceForms, "UnbounceForms");
+    $AA.initBasicFunctions(UnbounceForms, "UnbounceForms", {
+        url:'external/unbounce/forms',
+        useBaseUrl:true
+    });
 
 })();
 
@@ -2791,23 +2783,61 @@ var $AA = {};
     var AutoDetectedForms = function (obj) {
         var t = this;
         t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.autoDetectedForms,
             hasEmbedded:false
         };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
     var p = AutoDetectedForms.prototype;
 
+    $AA.initBasicFunctions(AutoDetectedForms, "AutoDetectedForms", {
+        url:'forms/autodetect',
+        useBaseUrl:true
+    });
+
+})();
+
+(function(){
+    var Invoices = function (obj) {
+        var t = this;
+        t.init();
+
+        t.initParameter(obj || {});
+    };
+
+
+    var p = Invoices.prototype;
+
     
-    $AA.initBasicFunctions(AutoDetectedForms, "AutoDetectedForms");
+    $AA.initBasicFunctions(Invoices, "Invoices", {
+        url:'invoices',
+        useBaseUrl:true
+    });
+
+})();
+
+(function(){
+    var ContactsTagManager = function (obj) {
+        var t = this;
+        t.d = {
+            hasEmbedded:false,
+            hasId:false
+        };
+        t.init();
+
+        t.initParameter(obj || {});
+    };
+
+
+    var p = ContactsTagManager.prototype;
+    
+    $AA.initBasicFunctions(ContactsTagManager, "ContactsTagManager", {
+        url:'contacts/tag-manager',
+        useBaseUrl:true
+    });
 
 })();
 
@@ -2817,7 +2847,7 @@ var $AA = {};
     var p = Account.prototype;
     p.get = function(){
         return $.ajax({
-            url: $AA.u.account,
+            url: $AA.accountUrl(),
             type: 'GET',
             dataType: 'json',
             headers: {Authorization: 'Bearer ' + $AA.token().get()}
@@ -2825,7 +2855,7 @@ var $AA = {};
     };
     p.limits = function(){
         return $.ajax({
-            url: $AA.u.account + '/limits',
+            url: $AA.accountUrl() + '/limits',
             type: 'GET',
             dataType: 'json',
             headers: {Authorization: 'Bearer ' + $AA.token().get()}
@@ -2833,7 +2863,7 @@ var $AA = {};
     };
     p.getPackages  = function(){
         return $.ajax({
-            url: $AA.u.account + '/limits',
+            url: $AA.accountUrl() + '/limits',
             type: 'GET',
             dataType: 'json',
             headers: {Authorization: 'Bearer ' + $AA.token().get()}
@@ -2842,6 +2872,7 @@ var $AA = {};
 
     /* No Rest-Api, so the basic functions are disabled */
 
+    $AA.createUrl('account')('account', true);
     $AA.m['Account'] = Account;
     $AA['account'] = function (obj) {
         var t = new Account(obj);
@@ -2853,39 +2884,28 @@ var $AA = {};
 (function(){
     var AccountStatistics = function (obj) {
         var t = this;
-        t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.accountStatistics
-        };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
     var p = AccountStatistics.prototype;
 
-    
-    $AA.initBasicFunctions(AccountStatistics, "AccountStatistics");
+
+    $AA.initBasicFunctions(AccountStatistics, "AccountStatistics", {
+        url:'account/statistics',
+        useBaseUrl:true
+    });
 
 })();
 
 (function(){
     var Clients = function (obj) {
         var t = this;
-        t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.clients
-        };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
@@ -2893,58 +2913,52 @@ var $AA = {};
 
     p.create = function(){
         return $.ajax({
-            url: $AA.u.clients,
+            url: t.url(),
             type: 'POST',
             dataType: 'json',
             headers: {Authorization: 'Bearer ' + $AA.token().get()}
         });
     };
     
-    $AA.initBasicFunctions(Clients, "Clients");
+    $AA.initBasicFunctions(Clients, "Clients", {
+        url:'clients',
+        useBaseUrl:true
+    });
 
 })();
 
 (function(){
-
     var Updates = function (obj) {
         var t = this;
-        t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.updates
-        };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
 
     var p = Updates.prototype;
 
-    $AA.initBasicFunctions(Updates, "Updates");
+    $AA.initBasicFunctions(Updates, "Updates", {
+        url:'updates',
+        useBaseUrl:true
+    });
 
 })();
 
 (function(){
     var Plugins = function (obj) {
         var t = this;
-        t.d = {
-            a: 3,
-            option: {},
-            url: $AA.u.plugins
-        };
         t.init();
 
-        if (typeof obj !== 'undefined') {
-            t.initParameter(obj);
-        }
+        t.initParameter(obj || {});
     };
 
     var p = Plugins.prototype;
 
-    $AA.initBasicFunctions(Plugins, "Plugins");
+    $AA.initBasicFunctions(Plugins, "Plugins", {
+        url:'plugins',
+        useBaseUrl:true
+    });
 
 })();
 
@@ -3086,10 +3100,10 @@ var $AA = {};
         table.loading();
         var xhr = $AA[apiName]().links('').fields(fields).limit(limit).page(page).where(where).orderBy(orderBy).orderDir(orderDir).urlSuffix(apiUrlSuffix).format(apiFormat).get().done(function (data) {
             table.pageMax(data.page_count);
-            /*
+
             table.totalEntries(data.total_items);
             table.writeEntries();
-            */
+
 
             if(apiItemsDir !== false){
                 var dir = apiItemsDir.split('/');
@@ -3301,6 +3315,7 @@ var $AA = {};
 })();
 
 (function(){
+    $AA.createUrl('account')('account', true);
     console.log('%c AutomizyJsApi module loaded! ', 'background: #000000; color: #bada55; font-size:14px');
 })();
 window.$AA = $AA;
