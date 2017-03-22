@@ -24,6 +24,7 @@ define([
             checkReady(function ($) {
                 $ACC.pluginLoader.plugins([
                     {
+                        name:'fontAwesome',
                         skipCondition:(function () {
                             var span = document.createElement('span');
                             span.className = 'fa';
@@ -39,6 +40,7 @@ define([
                         css:$ACC.config.dir + "/vendor/fontawesome/css/font-awesome.min.css"
                     },
                     {
+                        name:'automizyJs',
                         skipCondition:typeof AutomizyJs !== 'undefined',
                         css:$ACC.config.dir + "/vendor/automizy-js/automizy.css",
                         js:[
@@ -50,12 +52,13 @@ define([
                         }
                     },
                     {
+                        name:'automizyJsApi',
                         skipCondition:typeof AutomizyJsApi !== 'undefined',
                         js:$ACC.config.dir + "/vendor/automizy-js-api/automizy.api.js"
                     }
-                ]).run().complete(function(){
+                ]).complete(function(){
                     $ACC.pluginsLoaded();
-                });
+                }).run();
 
             });
 

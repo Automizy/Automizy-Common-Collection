@@ -33,7 +33,17 @@
                     clientSecret: automizyClientSecret
                 }).done(function(){
 
-                    alert('Ok');
+                    $('<button></button>').text('codeHelp + codeHelpItHelp').click(function(){
+                        $ACC.newCodeHelp().askForItHelpContent($ACC.newCodeHelpItHelp()).open();
+                    }).appendTo('body');
+
+                    $('<button></button>').text('scriptInsertion').click(function(){
+                        $ACC.modules.scriptInsertion.open();
+                    }).appendTo('body');
+
+                    $('<button></button>').text('unbounceIntegration').click(function(){
+                        $ACC.modules.unbounceIntegration.open();
+                    }).appendTo('body');
 
                 })
 

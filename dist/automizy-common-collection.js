@@ -1,4 +1,5 @@
 (function(){
+    window.AutomizyGlobalPlugins = window.AutomizyGlobalPlugins || {i:0};
     window.AutomizyCommonCollection = window.$ACC = new function () {
         var t = this;
         t.version = '0.1.1';
@@ -27,6 +28,9 @@
             plugins: [],
             loadedPluginsCount: 0,
             allPluginsCount:0,
+            globalPluginsCount:0,
+            loadedGlobalPluginsCount:0,
+            completeFunctionReady:true,
             completeFunctions: []
         };
     };
@@ -48,6 +52,7 @@
                 plugin.complete = plugin.complete || function () {};
                 plugin.css = plugin.css || [];
                 plugin.js = plugin.js || [];
+                plugin.name = plugin.name || ('automizy-plugin-' + ++AutomizyGlobalPlugins.i);
 
                 if (typeof plugin.css === 'string') {
                     plugin.css = [plugin.css];
@@ -63,56 +68,105 @@
         return t.d.plugins;
     };
 
-    p.run = function () {
+    p.pluginThen = function(plugin) {
+        var t = this;
 
+        t.d.loadedPluginsCount++;
+        for(var i = 0; i < plugin.completeFunctions.length; i++){
+            plugin.completeFunctions[i].apply(plugin, [true]);
+            plugin.completed = true;
+        }
+        console.log(plugin.name + ' loaded in AutomizyCommonCollection module (' + t.d.loadedPluginsCount + '/' + t.d.allPluginsCount + ')');
+        if (t.d.loadedPluginsCount === t.d.allPluginsCount && t.d.globalPluginsCount === t.d.loadedGlobalPluginsCount && t.d.completeFunctionReady) {
+            t.d.completeFunctionReady = false;
+            t.complete();
+        }
+
+        return t;
+    };
+
+    p.run = function () {
         var t = this;
 
         var hasActivePlugin = false;
+        var noJsPlugins = [];
+
+        t.d.allPluginsCount = 0;
+        t.d.loadedPluginsCount = 0;
 
         for (var i = 0; i < t.d.plugins.length; i++) {
-            var plugin = t.d.plugins[i];
-            if (plugin.inited) {
+            var pluginLocal = t.d.plugins[i];
+            if (pluginLocal.inited) {
                 continue;
             }
-            plugin.inited = true;
+            pluginLocal.inited = true;
 
-            if (!plugin.skipCondition) {
-                hasActivePlugin = true;
-                for (var j = 0; j < plugin.css.length; j++) {
-                    var head = document.getElementsByTagName('head')[0];
-                    var link = document.createElement('link');
-                    link.rel = 'stylesheet';
-                    link.type = 'text/css';
-                    link.href = plugin.css[j];
-                    head.appendChild(link);
+            if(typeof AutomizyGlobalPlugins[pluginLocal.name] === 'undefined'){
+                AutomizyGlobalPlugins[pluginLocal.name] = {
+                    name:pluginLocal.name,
+                    skipCondition:pluginLocal.skipCondition,
+                    css:pluginLocal.css,
+                    js:pluginLocal.js,
+                    xhr:false,
+                    completed:false,
+                    completeFunctions:[pluginLocal.complete]
                 }
-
-                (function (plugin) {
-                    var deferreds = [];
-
-                    function pluginThen() {
-                        t.d.loadedPluginsCount++;
-                        plugin.complete.apply(this, [true]);
-                        if (t.d.loadedPluginsCount === t.d.allPluginsCount) {
+            }else{
+                AutomizyGlobalPlugins[pluginLocal.name].completeFunctions.push(pluginLocal.complete);
+                if(AutomizyGlobalPlugins[pluginLocal.name].completed){
+                    pluginLocal.complete.apply(pluginLocal, [false]);
+                }else {
+                    hasActivePlugin = true;
+                    t.d.globalPluginsCount++;
+                    AutomizyGlobalPlugins[pluginLocal.name].xhr.always(function(){
+                        t.d.loadedGlobalPluginsCount++;
+                        if (t.d.loadedPluginsCount === t.d.allPluginsCount && t.d.globalPluginsCount === t.d.loadedGlobalPluginsCount && t.d.completeFunctionReady) {
+                            t.d.completeFunctionReady = false;
                             t.complete();
                         }
-                    }
-
-                    t.d.allPluginsCount++;
-                    if (plugin.js.length <= 0) {
-                        pluginThen();
-                    } else {
-                        for (var j = 0; j < plugin.js.length; j++) {
-                            deferreds.push($.getScript(plugin.js[j]));
-                        }
-                        $.when.apply(null, deferreds).always(function () {
-                            pluginThen();
-                        });
-                    }
-                })(plugin);
-            }else{
-                plugin.complete.apply(this, [false]);
+                    })
+                }
+                continue;
             }
+
+            var plugin = AutomizyGlobalPlugins[pluginLocal.name];
+
+            if (plugin.skipCondition) {
+                plugin.completed = true;
+                plugin.completeFunctions[0].apply(plugin, [false]);
+                continue;
+            }
+
+            for (var j = 0; j < plugin.css.length; j++) {
+                var head = document.getElementsByTagName('head')[0];
+                var link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.type = 'text/css';
+                link.href = plugin.css[j];
+                head.appendChild(link);
+            }
+
+            hasActivePlugin = true;
+            (function (plugin) {
+                var deferreds = [];
+
+                t.d.allPluginsCount++;
+                if (plugin.js.length <= 0) {
+                    noJsPlugins.push(plugin);
+                } else {
+                    for (var j = 0; j < plugin.js.length; j++) {
+                        deferreds.push($.getScript(plugin.js[j]));
+                    }
+                    plugin.xhr = $.when.apply(null, deferreds).always(function(){
+                        t.pluginThen(plugin);
+                    });
+                }
+            })(plugin);
+
+        }
+
+        for(var i = 0; i < noJsPlugins.length; i++){
+            t.pluginThen(noJsPlugins[i]);
         }
 
         if (!hasActivePlugin) {
@@ -125,6 +179,7 @@
         var t = this;
 
         if (typeof complete === 'function') {
+            t.d.completeFunctionReady = true;
             t.d.completeFunctions.push({
                 inited: false,
                 func: complete
@@ -132,7 +187,8 @@
             return t;
         }
 
-        for (var i = 0; i < t.d.completeFunctions.length; i++) {
+        var arrLength = t.d.completeFunctions.length;
+        for (var i = 0; i < arrLength; i++) {
             if (t.d.completeFunctions[i].inited) {
                 continue;
             }
@@ -200,6 +256,7 @@
             checkReady(function ($) {
                 $ACC.pluginLoader.plugins([
                     {
+                        name:'fontAwesome',
                         skipCondition:(function () {
                             var span = document.createElement('span');
                             span.className = 'fa';
@@ -215,6 +272,7 @@
                         css:$ACC.config.dir + "/vendor/fontawesome/css/font-awesome.min.css"
                     },
                     {
+                        name:'automizyJs',
                         skipCondition:typeof AutomizyJs !== 'undefined',
                         css:$ACC.config.dir + "/vendor/automizy-js/automizy.css",
                         js:[
@@ -226,12 +284,13 @@
                         }
                     },
                     {
+                        name:'automizyJsApi',
                         skipCondition:typeof AutomizyJsApi !== 'undefined',
                         js:$ACC.config.dir + "/vendor/automizy-js-api/automizy.api.js"
                     }
-                ]).run().complete(function(){
+                ]).complete(function(){
                     $ACC.pluginsLoaded();
-                });
+                }).run();
 
             });
 
@@ -319,7 +378,7 @@
             t.d.$doItYourselfBox.hide();
             t.d.$askForItHelpBox.hide();
         });
-        t.d.$mainBoxElementsUsePluginIcon      = $('<span class="fa fa-plug fa-3x fa-color-orange"></span>').appendTo(t.d.$mainBoxElementsUsePlugin);
+        t.d.$mainBoxElementsUsePluginIcon      = $('<span class="fa fa-plug fa-3x automizy-color-orange"></span>').appendTo(t.d.$mainBoxElementsUsePlugin);
         t.d.$mainBoxElementsUsePluginText      = $('<div class="automizy-common-collection-codehelp-elements-element-text"></div>').appendTo(t.d.$mainBoxElementsUsePlugin).text($A.translate('Use plugin'));
 
         t.d.$mainBoxElementsDoItYourself        = $('<div class="automizy-common-collection-codehelp-elements-element automizy-hide"></div>').appendTo(t.d.$mainBoxElements).click(function(){
@@ -328,7 +387,7 @@
             t.d.$doItYourselfBox.show();
             t.d.$askForItHelpBox.hide();
         });
-        t.d.$mainBoxElementsDoItYourselfIcon    = $('<span class="fa fa-code fa-3x fa-color-blue"></span>').appendTo(t.d.$mainBoxElementsDoItYourself);
+        t.d.$mainBoxElementsDoItYourselfIcon    = $('<span class="fa fa-code fa-3x automizy-color-blue"></span>').appendTo(t.d.$mainBoxElementsDoItYourself);
         t.d.$mainBoxElementsDoItYourselfText    = $('<div class="automizy-common-collection-codehelp-elements-element-text"></div>').appendTo(t.d.$mainBoxElementsDoItYourself).text($A.translate('Do it yourself'));
 
         t.d.$mainBoxElementsAskForItHelp        = $('<div class="automizy-common-collection-codehelp-elements-element automizy-hide"></div>').appendTo(t.d.$mainBoxElements).click(function(){
@@ -337,7 +396,7 @@
             t.d.$doItYourselfBox.hide();
             t.d.$askForItHelpBox.show();
         });
-        t.d.$mainBoxElementsAskForItHelpIcon    = $('<span class="fa fa-commenting-o fa-3x fa-color-green"></span>').appendTo(t.d.$mainBoxElementsAskForItHelp);
+        t.d.$mainBoxElementsAskForItHelpIcon    = $('<span class="fa fa-commenting-o fa-3x automizy-color-green"></span>').appendTo(t.d.$mainBoxElementsAskForItHelp);
         t.d.$mainBoxElementsAskForItHelpText    = $('<div class="automizy-common-collection-codehelp-elements-element-text"></div>').appendTo(t.d.$mainBoxElementsAskForItHelp).text($A.translate('Ask for IT help'));
 
         t.d.helpButton = $A.newButton({
@@ -470,6 +529,9 @@
     p.askForItHelpContent = function(content){
         var t = this;
         if(typeof content !== 'undefined'){
+            if(content instanceof $ACC.m.CodeHelpItHelp){
+                content = content.widget();
+            }
             t.d.$askForItHelpBoxTrTd2.html(content);
             t.d.$mainBoxElementsAskForItHelp.removeClass('automizy-hide');
             return t;
@@ -486,354 +548,432 @@
 })();
 
 (function(){
-    var CodeHelpItHelp = function () {
-        var t = this;
-        t.d = {
-            dialogs:{},
-            inputs:{},
-            buttons:{},
-            done:function(){},
-            beforeSend:function(){},
-            previewUrl:false
-        };
+    $ACC.pluginsLoaded(function () {
+        var CodeHelpItHelp = function () {
+            var t = this;
+            t.d = {
+                dialogs: {},
+                inputs: {},
+                buttons: {},
+                done: function () {},
+                beforeSend: function () {},
+                previewUrl: false
+            };
 
-        t.d.$widget = $('<div></div>');
-        t.d.$title = $('<div></div>').appendTo(t.d.$widget);
-        t.d.$widget.append('<br/><br/>');
-        t.d.inputs.email = $A.newInput({
-            label:$A.translate("Enter your developers' email address:"),
-            name:'email',
-            labelAfter:$A.newButton({
-                skin:'nobox-orange',
-                click:function(){
-                    var win = window.open(t.previewUrl(), '_blank');
-                    win.focus();
+            t.d.$widget = $('<div></div>');
+            t.d.$title = $('<div></div>').appendTo(t.d.$widget);
+            t.d.$widget.append('<br/><br/>');
+            t.d.inputs.email = $A.newInput2({
+                labelTop: $A.translate("Enter your developers' email address:"),
+                name: 'email',
+                validator:'email',
+                width:400,
+                buttonRight: {
+                    skin:'nobox-orange',
+                    text:'preview',
+                    icon:'fa-eye',
+                    click: function(){
+                        var win = window.open(t.previewUrl(), '_blank');
+                        win.focus();
+                    }
                 },
-                create:function(){
-                    var $html = $('<span></span>');
-                    var $icon = $('<span class="fa fa-eye"></span>').appendTo($html);
-                    $html.append(' ' + $A.translate('Preview'));
-                    this.widget().css('margin','0 0 0 12px');
-                    this.html($html);
+                target: t.d.$widget
+            });
+            t.d.$success = $('<div style="padding-bottom:12px; color:#008000">' + $A.translate('Send successful') + '</div>').appendTo(t.d.$widget).hide();
+            t.d.buttons.send = $A.newButton({
+                text: $A.translate("Send Instructions"),
+                skin: 'simple-orange',
+                newRow: true,
+                target: t.d.$widget,
+                click: function () {
+                    if(t.d.inputs.email.validate()) {
+                        $A.ajaxDocumentCover(1);
+                        t.d.$success.hide();
+                        $.ajax({
+                            url: $AA.baseUrl() + '/public-email',
+                            type: 'POST',
+                            dataType: 'json',
+                            data: {
+                                emailAddress: t.d.inputs.email.val(),
+                                htmlEmail: t.email(),
+                                fields: t.fields(),
+                                subject: t.subject()
+                            },
+                            headers: {Authorization: 'Bearer ' + $AA.token().get()}
+                        }).always(function (data) {
+                            t.d.$success.show(250);
+                            $A.ajaxDocumentCover(0);
+                        })
+                    }
                 }
-            }),
-            breakLabel:true,
-            target:t.d.$widget
-        });
-        t.d.$success = $('<div style="padding-bottom:12px; color:#008000">'+$A.translate('Send successful')+'</div>').appendTo(t.d.$widget).hide();
-        t.d.buttons.send = $A.newButton({
-            text:$A.translate("Send Instructions"),
-            skin:'simple-orange',
-            newRow:true,
-            target:t.d.$widget,
-            click:function(){
-                $A.ajaxDocumentCover(1);
-                t.d.$success.hide();
-                $.ajax({
-                    url: $AA.u.base + '/public-email',
-                    type: 'POST',
-                    dataType: 'json',
-                    data:{
-                        emailAddress: t.d.inputs.email.val(),
-                        htmlEmail: t.email(),
-                        fields: t.fields(),
-                        subject: t.subject()
-                    },
-                    headers: {Authorization: 'Bearer ' + $AA.token().get()}
-                }).always(function(data){
-                    t.d.$success.show(250);
-                    $A.ajaxDocumentCover(0);
-                })
+            });
+
+            t.title($A.translate('Ask for IT help now by sending the instructions.'));
+
+        };
+
+        var p = CodeHelpItHelp.prototype;
+
+        p.previewUrl = function (previewUrl) {
+            var t = this;
+            if (typeof previewUrl !== 'undefined') {
+                t.d.previewUrl = previewUrl;
+                return t;
             }
-        });
-
-        t.title($A.translate('Ask for IT help now by sending the instructions.'));
-
-    };
-
-    var p = CodeHelpItHelp.prototype;
-
-    p.previewUrl = function(previewUrl){
-        var t = this;
-        if(typeof previewUrl !== 'undefined') {
-            t.d.previewUrl = previewUrl;
-            return t;
-        }
-        return t.d.previewUrl;
-    };
-    p.title = function(title){
-        var t = this;
-        if(typeof title !== 'undefined') {
-            t.d.title = title;
-            t.d.$title.html(title);
-            return t;
-        }
-        return t.d.title;
-    };
-    p.widget = function(){
-        var t = this;
-        return t.d.$widget;
-    };
-    p.fields = function(fields){
-        var t = this;
-        if(typeof fields !== 'undefined') {
-            t.d.fields = fields;
-            return t;
-        }
-        return t.d.fields;
-    };
-    p.email = function(email){
-        var t = this;
-        if(typeof email !== 'undefined') {
-            t.d.email = email;
-            if(t.previewUrl() === false){
-                t.previewUrl('https://app.automizy.com/public/email/'+t.d.email+'.html');
+            return t.d.previewUrl;
+        };
+        p.title = function (title) {
+            var t = this;
+            if (typeof title !== 'undefined') {
+                t.d.title = title;
+                t.d.$title.html(title);
+                return t;
             }
-            return t;
-        }
-        return t.d.email;
-    };
-    p.subject = function(subject){
-        var t = this;
-        if(typeof subject !== 'undefined') {
-            t.d.subject = subject;
-            return t;
-        }
-        return t.d.subject;
-    };
+            return t.d.title;
+        };
+        p.widget = function () {
+            var t = this;
+            return t.d.$widget;
+        };
+        p.fields = function (fields) {
+            var t = this;
+            if (typeof fields !== 'undefined') {
+                t.d.fields = fields;
+                return t;
+            }
+            return t.d.fields;
+        };
+        p.email = function (email) {
+            var t = this;
+            if (typeof email !== 'undefined') {
+                t.d.email = email;
+                t.previewUrl('https://app.automizy.com/public/email/' + t.d.email + '.html');
+                return t;
+            }
+            return t.d.email;
+        };
+        p.subject = function (subject) {
+            var t = this;
+            if (typeof subject !== 'undefined') {
+                t.d.subject = subject;
+                return t;
+            }
+            return t.d.subject;
+        };
 
-    $ACC.m.CodeHelpItHelp = CodeHelpItHelp;
-    $ACC.newCodeHelpItHelp = function () {
-        return new $ACC.m.CodeHelpItHelp();
-    };
+        $ACC.m.CodeHelpItHelp = CodeHelpItHelp;
+        $ACC.newCodeHelpItHelp = function () {
+            return new $ACC.m.CodeHelpItHelp();
+        };
 
-    return $ACC.m.CodeHelpItHelp;
+        return $ACC.m.CodeHelpItHelp;
+    });
 })();
 
 (function(){
-    var CodeHelpScriptInsertion = function () {
-        var t = this;
-        t.d = {
-            hash:'<HASH>',
-            clicked:false,
-            scriptInserted:false,
-            loopStopped:false,
-            timeout:false,
-            type:false
-        };
+    $ACC.pluginsLoaded(function () {
+        var CodeHelpScriptInsertion = function () {
+            var t = this;
+            t.d = {
+                hash: '<HASH>',
+                clicked: false,
+                scriptInserted: false,
+                loopStopped: false,
+                timeout: false,
+                type: false
+            };
 
-        t.d.$helpScriptInsertionDoItYourself = $('<div></div>');
-        $('<div></div>').text($A.translate('Copy the code below:')).appendTo(t.d.$helpScriptInsertionDoItYourself);
-        t.d.$code = $('<pre class="automizy-code-content"></pre>').text('<script data-automizy-id="'+t.hash()+'" src="//analytics.automizy.com/analytics.js" async></script>').appendTo(t.d.$helpScriptInsertionDoItYourself);
-        $('<b></b>').text($A.translate('Important!')).appendTo(t.d.$helpScriptInsertionDoItYourself);
-        $('<div></div>').text($A.translate('After you copied the installation code, go to your website and insert it to the header section by hitting ctrl+V (PC) or @+V (Mac).')).appendTo(t.d.$helpScriptInsertionDoItYourself);
+            t.d.$helpScriptInsertionDoItYourself = $('<div></div>');
+            $('<div></div>').text($A.translate('Copy the code below:')).appendTo(t.d.$helpScriptInsertionDoItYourself);
+            t.d.$code = $('<pre class="automizy-code-content"></pre>').text('<script data-automizy-id="' + t.hash() + '" src="//analytics.automizy.com/analytics.js" async></script>').appendTo(t.d.$helpScriptInsertionDoItYourself);
+            $('<b></b>').text($A.translate('Important!')).appendTo(t.d.$helpScriptInsertionDoItYourself);
+            $('<div></div>').text($A.translate('After you copied the installation code, go to your website and insert it to the header section by hitting ctrl+V (PC) or @+V (Mac).')).appendTo(t.d.$helpScriptInsertionDoItYourself);
 
-        t.d.$helpScriptInsertionPlugin = $('<div></div>');
-        $('<div></div>').html($A.translate('Follow these steps:')).appendTo(t.d.$helpScriptInsertionPlugin);
-        t.d.$helpScriptInsertionPluginList = $('<ol></ol>').appendTo(t.d.$helpScriptInsertionPlugin);
-        $('<li></li>').html($A.translate('Login to your wordpress site')).appendTo(t.d.$helpScriptInsertionPluginList);
-        $('<li></li>').html($A.translate('Search for Automizy plugin')).appendTo(t.d.$helpScriptInsertionPluginList);
-        $('<li></li>').html($A.translate('Install it and log in with your Automizy user name and password')).appendTo(t.d.$helpScriptInsertionPluginList);
-        $('<li></li>').html($A.translate('Now you can insert forms!')).appendTo(t.d.$helpScriptInsertionPluginList);
+            t.d.$helpScriptInsertionPlugin = $('<div></div>');
+            $('<div></div>').html($A.translate('Follow these steps:')).appendTo(t.d.$helpScriptInsertionPlugin);
+            t.d.$helpScriptInsertionPluginList = $('<ol></ol>').appendTo(t.d.$helpScriptInsertionPlugin);
+            $('<li></li>').html($A.translate('Login to your wordpress site')).appendTo(t.d.$helpScriptInsertionPluginList);
+            $('<li></li>').html($A.translate('Search for Automizy plugin')).appendTo(t.d.$helpScriptInsertionPluginList);
+            $('<li></li>').html($A.translate('Install it and log in with your Automizy user name and password')).appendTo(t.d.$helpScriptInsertionPluginList);
+            $('<li></li>').html($A.translate('Now you can insert forms!')).appendTo(t.d.$helpScriptInsertionPluginList);
 
-        t.d.scriptInsertionItHelp = $ACC.newCodeHelpItHelp()
-            .email('ithelp-analytics-script-en')
-            .subject($A.translate("Help me connect Automizy with our webpage please"))
-            .fields({
-                hash: t.hash()
-            });
+            t.d.scriptInsertionItHelp = $ACC.newCodeHelpItHelp()
+                .email('ithelp-analytics-script-en')
+                .subject($A.translate("Help me connect Automizy with our webpage please"))
+                .fields({
+                    hash: t.hash()
+                });
 
-        t.d.scriptInsertion = $ACC.newCodeHelp()
-            .title($A.translate('Install code'))
-            .description($A.translate('To get started with Automizy, add the installation code to your web- or blog pages!'))
-            .doItYourselfContent(t.d.$helpScriptInsertionDoItYourself)
-            .pluginContent(t.d.$helpScriptInsertionPlugin)
-            .askForItHelpContent(t.d.scriptInsertionItHelp.widget());
+            t.d.scriptInsertion = $ACC.newCodeHelp()
+                .title($A.translate('Install code'))
+                .description($A.translate('To get started with Automizy, add the installation code to your web- or blog pages!'))
+                .doItYourselfContent(t.d.$helpScriptInsertionDoItYourself)
+                .pluginContent(t.d.$helpScriptInsertionPlugin)
+                .askForItHelpContent(t.d.scriptInsertionItHelp.widget());
 
-        t.d.checkButton = $A.newButton({
-            skin:'simple-orange',
-            text: $A.translate('Check'),
-            click: function () {
-                $A.ajaxDocumentCover(1);
-                t.d.clicked = true;
-                t.d.check().fail(function(){
-                    t.d.$checkErrorMessage.show();
-                }).always(function(){
-                    $A.ajaxDocumentCover(0);
-                })
-            }
-        });
-
-        t.d.scriptInsertion.d.dialog.open(function(){
-            if(t.d.type !== 'install') {
-                t.d.loopStopped = false;
-                t.d.check();
-            }
-        }).close(function(){
-            t.d.loopStopped = true;
-        }).addButton(t.d.checkButton);
-
-        t.d.$checkSuccessMessage = $('<div style="float:left; color:#008000; font-family:Arial">'+$A.translate('Analytics code detected! Thank you!')+'</div>').appendTo(t.d.scriptInsertion.d.dialog.d.$buttons).hide();
-        t.d.$checkErrorMessage = $('<div style="float:left; color:#ff0000; font-family:Arial">'+$A.translate('The system can not find the analytics code.')+'</div>').appendTo(t.d.scriptInsertion.d.dialog.d.$buttons).hide();
-
-        t.d.check = function(){
-            clearTimeout(t.d.timeout);
-            if(t.d.scriptInserted === true || t.d.loopStopped === true){
-                t.d.checkButton.hide();
-                return true;
-            }
-            return $.ajax({
-                url: $AA.u.account + '/is-script-inserted',
-                type: 'GET',
-                dataType: 'json',
-                headers: {Authorization: 'Bearer ' + $AA.token().get()}
-            }).done(function(data){
-                if($A.parseBoolean(data.inserted)){
-                    t.d.checkButton.hide();
-                    t.d.scriptInserted = true;
-                    if(typeof Automizy !== 'undefined') {
-                        Automizy.config.user.isScriptInserted = true;
-                    }
-                    t.d.$checkSuccessMessage.show();
-                }else{
-                    if(t.d.clicked) {
+            t.d.checkButton = $A.newButton({
+                skin: 'simple-orange',
+                text: $A.translate('Check'),
+                click: function () {
+                    $A.ajaxDocumentCover(1);
+                    t.d.clicked = true;
+                    t.d.check().fail(function () {
                         t.d.$checkErrorMessage.show();
-                    }
-                    t.d.timeout = setTimeout(function(){
-                        t.d.check();
-                    }, 3000);
+                    }).always(function () {
+                        $A.ajaxDocumentCover(0);
+                    })
                 }
             });
-        }
-    };
 
-    var p = CodeHelpScriptInsertion.prototype;
-
-    p.type = function(type){
-        var t = this;
-        if(typeof type !== 'undefined'){
-            t.d.type = type;
-
-            if(t.d.type === 'install'){
-                t.d.scriptInsertion.description($A.translate('To get started with Automizy, add the installation code to your web- or blog pages!'));
+            t.d.scriptInsertion.d.dialog.open(function () {
+                if (t.d.type !== 'install') {
+                    t.d.loopStopped = false;
+                    t.d.check();
+                }
+            }).close(function () {
                 t.d.loopStopped = true;
-                t.d.$checkSuccessMessage.hide();
-                t.d.$checkErrorMessage.hide();
-                t.d.checkButton.hide();
-            }else if(t.d.type === 'createForm'){
-                t.d.scriptInsertion.description($A.translate('In order to create forms please insert the Automizy script into your web page. Choose from the 3 options below.'));
-                t.d.loopStopped = false;
-                t.d.checkButton.show();
+            }).addButton(t.d.checkButton);
+
+            t.d.$checkSuccessMessage = $('<div style="float:left; color:#008000; font-family:Arial">' + $A.translate('Analytics code detected! Thank you!') + '</div>').appendTo(t.d.scriptInsertion.d.dialog.d.$buttons).hide();
+            t.d.$checkErrorMessage = $('<div style="float:left; color:#ff0000; font-family:Arial">' + $A.translate('The system can not find the analytics code.') + '</div>').appendTo(t.d.scriptInsertion.d.dialog.d.$buttons).hide();
+
+            t.d.check = function () {
+                clearTimeout(t.d.timeout);
+                if (t.d.scriptInserted === true || t.d.loopStopped === true) {
+                    t.d.checkButton.hide();
+                    return true;
+                }
+                return $.ajax({
+                    url: $AA.accountUrl() + '/is-script-inserted',
+                    type: 'GET',
+                    dataType: 'json',
+                    headers: {Authorization: 'Bearer ' + $AA.token().get()}
+                }).done(function (data) {
+                    if ($A.parseBoolean(data.inserted)) {
+                        t.d.checkButton.hide();
+                        t.d.scriptInserted = true;
+                        if (typeof Automizy !== 'undefined') {
+                            Automizy.config.user.isScriptInserted = true;
+                        }
+                        t.d.$checkSuccessMessage.show();
+                    } else {
+                        if (t.d.clicked) {
+                            t.d.$checkErrorMessage.show();
+                        }
+                        t.d.timeout = setTimeout(function () {
+                            t.d.check();
+                        }, 3000);
+                    }
+                });
             }
+        };
 
+        var p = CodeHelpScriptInsertion.prototype;
+
+        p.type = function (type) {
+            var t = this;
+            if (typeof type !== 'undefined') {
+                t.d.type = type;
+
+                if (t.d.type === 'install') {
+                    t.d.scriptInsertion.description($A.translate('To get started with Automizy, add the installation code to your web- or blog pages!'));
+                    t.d.loopStopped = true;
+                    t.d.$checkSuccessMessage.hide();
+                    t.d.$checkErrorMessage.hide();
+                    t.d.checkButton.hide();
+                } else if (t.d.type === 'createForm') {
+                    t.d.scriptInsertion.description($A.translate('In order to create forms please insert the Automizy script into your web page. Choose from the 3 options below.'));
+                    t.d.loopStopped = false;
+                    t.d.checkButton.show();
+                }
+
+                return t;
+            }
+            return t.d.type;
+        };
+        p.hash = function (hash) {
+            var t = this;
+            if (typeof hash !== 'undefined') {
+                t.d.hash = hash;
+                t.d.$code.text('<script data-automizy-id="' + t.d.hash + '" src="//analytics.automizy.com/analytics.js" async></script>');
+                t.d.scriptInsertionItHelp.fields({
+                    hash: t.hash()
+                });
+                return t;
+            }
+            return t.d.hash;
+        };
+        p.open = function () {
+            var t = this;
+            t.d.scriptInsertion.open();
             return t;
-        }
-        return t.d.type;
-    };
-    p.hash = function(hash){
-        var t = this;
-        if(typeof hash !== 'undefined'){
-            t.d.hash = hash;
-            t.d.$code.text('<script data-automizy-id="'+t.d.hash+'" src="//analytics.automizy.com/analytics.js" async></script>');
-            t.d.scriptInsertionItHelp.fields({
-                hash: t.hash()
-            });
-            return t;
-        }
-        return t.d.hash;
-    };
-    p.open = function(){
-        var t = this;
-        t.d.scriptInsertion.open();
-        return t;
-    };
+        };
 
-    $ACC.m.CodeHelpScriptInsertion = CodeHelpScriptInsertion;
-    $ACC.newCodeHelpScriptInsertion = function () {
-        return new $ACC.m.CodeHelpScriptInsertion();
-    };
+        $ACC.m.CodeHelpScriptInsertion = CodeHelpScriptInsertion;
+        $ACC.newCodeHelpScriptInsertion = function () {
+            return new $ACC.m.CodeHelpScriptInsertion();
+        };
 
-    $ACC.modules.scriptInsertion = $ACC.newCodeHelpScriptInsertion();
+        $ACC.modules.scriptInsertion = $ACC.newCodeHelpScriptInsertion();
 
-    return $ACC.m.CodeHelpScriptInsertion;
+        return $ACC.m.CodeHelpScriptInsertion;
+    });
 })();
 
 (function(){
-    var CodeHelpUnbounceIntegration = function () {
-        var t = this;
-        t.d = {
-            hash:'<HASH>'
+    $ACC.pluginsLoaded(function () {
+        var CodeHelpAutodetectScriptInsertion = function () {
+            var t = this;
+            t.d = {
+                hash: '<HASH>',
+                clicked: false,
+                scriptInserted: false,
+                type: false,
+                scriptCode:"<!-- Automizy Autodetect -->\r\n"+
+                    "<script>\r\n"+
+                    "    (function (a, u, t, o, m, i, z, y) {\r\n"+
+                    "        i = i || 'script';\r\n"+
+                    "        z = a['AutomizyAutodetect'] = a['AutomizyAutodetect'] || {id:0};\r\n"+
+                    "        if(z.id !== 0){return;}\r\n"+
+                    "        z[i] = u.createElement(i); y = encodeURIComponent(document.URL);\r\n"+
+                    "        z[i].src = t + '?id=' + o + '&v=' + (Math.ceil(new Date()/(m || 25000))) + (y.length < 1500 ? '&url=' + y : '');\r\n"+
+                    "        z[i].async = 1; z.id = o; var fs = u.getElementsByTagName(i)[0];z[i].setAttribute('data-automizy-id',o);\r\n"+
+                    "        fs.parentNode.insertBefore(z[i], z.fs);\r\n"+
+                    "    })(window, document, 'https://scripts.automizy.com/autodetect.js', '[[hash]]');\r\n"+
+                    "</script>\r\n"+
+                    "<!-- End Automizy Autodetect -->"
+            };
+
+            t.d.$helpScriptInsertionDoItYourself = $('<div></div>');
+            $('<div></div>').text($A.translate('Copy the code below:')).appendTo(t.d.$helpScriptInsertionDoItYourself);
+            t.d.$code = $('<pre class="automizy-code-content"></pre>').appendTo(t.d.$helpScriptInsertionDoItYourself);
+            $('<b></b>').text($A.translate('Important!')).appendTo(t.d.$helpScriptInsertionDoItYourself);
+            $('<div></div>').text($A.translate('After you copied the installation code, go to your website and insert it to the header section by hitting ctrl+V (PC) or @+V (Mac).')).appendTo(t.d.$helpScriptInsertionDoItYourself);
+
+            t.d.scriptInsertionItHelp = $ACC.newCodeHelpItHelp()
+                .email('ithelp-autodetect-script-en')
+                .subject($A.translate("Help me connect Automizy with our webpage please"))
+                .fields({
+                    hash: t.hash()
+                });
+
+            t.d.scriptInsertion = $ACC.newCodeHelp()
+                .title($A.translate('Install code'))
+                .description($A.translate('To get started with Automizy, add the installation code to your web- or blog pages!'))
+                .doItYourselfContent(t.d.$helpScriptInsertionDoItYourself)
+                .askForItHelpContent(t.d.scriptInsertionItHelp.widget());
+
         };
 
-        t.d.$doItYourself = $('<div></div>');
-        $('<div></div>').html($A.translate('Copy the URL below:')).appendTo(t.d.$doItYourself);
-        t.d.$code = $('<pre class="automizy-code-content"></pre>').html('https://api.automizy.com/external/unbounce/'+t.hash()).appendTo(t.d.$doItYourself);
-        $('<div></div>').html($A.translate('Next steps:')).appendTo(t.d.$doItYourself);
-        t.d.$list = $('<ol></ol>').appendTo(t.d.$doItYourself);
-        $('<li></li>').html($A.translate("Login to Unbounce and open the landing page you want to connect with Automizy.")).appendTo(t.d.$list);
-        $('<li></li>').html($A.translate('Scroll down to <b>"Basic Form Integrations"</b> panel.')).appendTo(t.d.$list);
-        $('<li></li>').html($A.translate('Click <b>"Webhook: POST or URL"</b> button.')).appendTo(t.d.$list);
-        $('<li></li>').html($A.translate("<b>Insert the script code</b> to the popup window by hitting Ctrl+V (PC) or @+V (Mac).")).appendTo(t.d.$list);
-        $('<li></li>').html($A.translate("<b>Go to the live landing page and subscribe</b> (if you don't do this Automizy won't recognise the form).")).appendTo(t.d.$list);
-        $('<li></li>').html($A.translate("You're done!")).appendTo(t.d.$list);
+        var p = CodeHelpAutodetectScriptInsertion.prototype;
 
-        t.d.itHelp = $ACC.newCodeHelpItHelp()
-            .email('ithelp-integration-unbounce-en')
-            .subject($A.translate("Help me connect Automizy with Unbounce please"))
-            .fields({
-                hash: t.hash()
-            });
-
-        t.d.scriptInsertion = $ACC.newCodeHelp()
-            .title($A.translate('Connect Automizy with unbounce'))
-            .description('Unbounce form is missing')
-            .doItYourselfContent(t.d.$doItYourself)
-            .askForItHelpContent(t.d.itHelp.widget());
-    };
-
-    var p = CodeHelpUnbounceIntegration.prototype;
-
-    p.type = function(type){
-        var t = this;
-        if(typeof type !== 'undefined'){
-            t.d.type = type;
-
-            if(t.d.type === 'install'){
-                t.d.scriptInsertion.description('');
-            }else if(t.d.type === 'trigger'){
-                t.d.scriptInsertion.description($A.translate('Unbounce form is missing.'));
+        p.hash = function (hash) {
+            var t = this;
+            if (typeof hash !== 'undefined') {
+                t.d.hash = hash;
+                t.d.$code.text(t.d.scriptCode.replace(/\[\[hash]]/g, t.d.hash));
+                t.d.scriptInsertionItHelp.fields({
+                    hash: t.hash()
+                });
+                return t;
             }
-
+            return t.d.hash;
+        };
+        p.open = function () {
+            var t = this;
+            t.d.scriptInsertion.open();
             return t;
-        }
-        return t.d.type;
-    };
-    p.hash = function(hash){
-        var t = this;
-        if(typeof hash !== 'undefined'){
-            t.d.hash = hash;
-            t.d.$code.text('https://api.automizy.com/external/unbounce/'+t.d.hash);
-            t.d.itHelp.fields({
-                hash: t.hash()
-            });
+        };
+
+        $ACC.m.CodeHelpAutodetectScriptInsertion = CodeHelpAutodetectScriptInsertion;
+        $ACC.newCodeHelpAutodetectScriptInsertion = function () {
+            return new $ACC.m.CodeHelpAutodetectScriptInsertion();
+        };
+
+        $ACC.modules.autodetectScriptInsertion = $ACC.newCodeHelpAutodetectScriptInsertion();
+
+        return $ACC.m.CodeHelpAutodetectScriptInsertion;
+    });
+})();
+
+(function(){
+    $ACC.pluginsLoaded(function () {
+        var CodeHelpUnbounceIntegration = function () {
+            var t = this;
+            t.d = {
+                hash: '<HASH>'
+            };
+
+            t.d.$doItYourself = $('<div></div>');
+            $('<div></div>').html($A.translate('Copy the URL below:')).appendTo(t.d.$doItYourself);
+            t.d.$code = $('<pre class="automizy-code-content"></pre>').html('https://api.automizy.com/external/unbounce/' + t.hash()).appendTo(t.d.$doItYourself);
+            $('<div></div>').html($A.translate('Next steps:')).appendTo(t.d.$doItYourself);
+            t.d.$list = $('<ol></ol>').appendTo(t.d.$doItYourself);
+            $('<li></li>').html($A.translate("Login to Unbounce and open the landing page you want to connect with Automizy.")).appendTo(t.d.$list);
+            $('<li></li>').html($A.translate('Scroll down to <b>"Basic Form Integrations"</b> panel.')).appendTo(t.d.$list);
+            $('<li></li>').html($A.translate('Click <b>"Webhook: POST or URL"</b> button.')).appendTo(t.d.$list);
+            $('<li></li>').html($A.translate("<b>Insert the script code</b> to the popup window by hitting Ctrl+V (PC) or @+V (Mac).")).appendTo(t.d.$list);
+            $('<li></li>').html($A.translate("<b>Go to the live landing page and subscribe</b> (if you don't do this Automizy won't recognise the form).")).appendTo(t.d.$list);
+            $('<li></li>').html($A.translate("You're done!")).appendTo(t.d.$list);
+
+            t.d.itHelp = $ACC.newCodeHelpItHelp()
+                .email('ithelp-integration-unbounce-en')
+                .subject($A.translate("Help me connect Automizy with Unbounce please"))
+                .fields({
+                    hash: t.hash()
+                });
+
+            t.d.scriptInsertion = $ACC.newCodeHelp()
+                .title($A.translate('Connect Automizy with unbounce'))
+                .description('Unbounce form is missing')
+                .doItYourselfContent(t.d.$doItYourself)
+                .askForItHelpContent(t.d.itHelp.widget());
+        };
+
+        var p = CodeHelpUnbounceIntegration.prototype;
+
+        p.type = function (type) {
+            var t = this;
+            if (typeof type !== 'undefined') {
+                t.d.type = type;
+
+                if (t.d.type === 'install') {
+                    t.d.scriptInsertion.description('');
+                } else if (t.d.type === 'trigger') {
+                    t.d.scriptInsertion.description($A.translate('Unbounce form is missing.'));
+                }
+
+                return t;
+            }
+            return t.d.type;
+        };
+        p.hash = function (hash) {
+            var t = this;
+            if (typeof hash !== 'undefined') {
+                t.d.hash = hash;
+                t.d.$code.text('https://api.automizy.com/external/unbounce/' + t.d.hash);
+                t.d.itHelp.fields({
+                    hash: t.hash()
+                });
+                return t;
+            }
+            return t.d.hash;
+        };
+        p.open = function () {
+            var t = this;
+            t.d.scriptInsertion.open();
             return t;
-        }
-        return t.d.hash;
-    };
-    p.open = function(){
-        var t = this;
-        t.d.scriptInsertion.open();
-        return t;
-    };
+        };
 
-    $ACC.m.CodeHelpUnbounceIntegration = CodeHelpUnbounceIntegration;
-    $ACC.newCodeHelpUnbounceIntegration = function () {
-        return new $ACC.m.CodeHelpUnbounceIntegration();
-    };
+        $ACC.m.CodeHelpUnbounceIntegration = CodeHelpUnbounceIntegration;
+        $ACC.newCodeHelpUnbounceIntegration = function () {
+            return new $ACC.m.CodeHelpUnbounceIntegration();
+        };
 
-    $ACC.modules.unbounceIntegration = $ACC.newCodeHelpUnbounceIntegration();
+        $ACC.modules.unbounceIntegration = $ACC.newCodeHelpUnbounceIntegration();
 
-    return $ACC.m.CodeHelpUnbounceIntegration;
+        return $ACC.m.CodeHelpUnbounceIntegration;
+    });
 })();
 
 (function(){

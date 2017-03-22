@@ -19,7 +19,7 @@ define([
             t.d.$doItYourselfBox.hide();
             t.d.$askForItHelpBox.hide();
         });
-        t.d.$mainBoxElementsUsePluginIcon      = $('<span class="fa fa-plug fa-3x fa-color-orange"></span>').appendTo(t.d.$mainBoxElementsUsePlugin);
+        t.d.$mainBoxElementsUsePluginIcon      = $('<span class="fa fa-plug fa-3x automizy-color-orange"></span>').appendTo(t.d.$mainBoxElementsUsePlugin);
         t.d.$mainBoxElementsUsePluginText      = $('<div class="automizy-common-collection-codehelp-elements-element-text"></div>').appendTo(t.d.$mainBoxElementsUsePlugin).text($A.translate('Use plugin'));
 
         t.d.$mainBoxElementsDoItYourself        = $('<div class="automizy-common-collection-codehelp-elements-element automizy-hide"></div>').appendTo(t.d.$mainBoxElements).click(function(){
@@ -28,7 +28,7 @@ define([
             t.d.$doItYourselfBox.show();
             t.d.$askForItHelpBox.hide();
         });
-        t.d.$mainBoxElementsDoItYourselfIcon    = $('<span class="fa fa-code fa-3x fa-color-blue"></span>').appendTo(t.d.$mainBoxElementsDoItYourself);
+        t.d.$mainBoxElementsDoItYourselfIcon    = $('<span class="fa fa-code fa-3x automizy-color-blue"></span>').appendTo(t.d.$mainBoxElementsDoItYourself);
         t.d.$mainBoxElementsDoItYourselfText    = $('<div class="automizy-common-collection-codehelp-elements-element-text"></div>').appendTo(t.d.$mainBoxElementsDoItYourself).text($A.translate('Do it yourself'));
 
         t.d.$mainBoxElementsAskForItHelp        = $('<div class="automizy-common-collection-codehelp-elements-element automizy-hide"></div>').appendTo(t.d.$mainBoxElements).click(function(){
@@ -37,7 +37,7 @@ define([
             t.d.$doItYourselfBox.hide();
             t.d.$askForItHelpBox.show();
         });
-        t.d.$mainBoxElementsAskForItHelpIcon    = $('<span class="fa fa-commenting-o fa-3x fa-color-green"></span>').appendTo(t.d.$mainBoxElementsAskForItHelp);
+        t.d.$mainBoxElementsAskForItHelpIcon    = $('<span class="fa fa-commenting-o fa-3x automizy-color-green"></span>').appendTo(t.d.$mainBoxElementsAskForItHelp);
         t.d.$mainBoxElementsAskForItHelpText    = $('<div class="automizy-common-collection-codehelp-elements-element-text"></div>').appendTo(t.d.$mainBoxElementsAskForItHelp).text($A.translate('Ask for IT help'));
 
         t.d.helpButton = $A.newButton({
@@ -170,6 +170,9 @@ define([
     p.askForItHelpContent = function(content){
         var t = this;
         if(typeof content !== 'undefined'){
+            if(content instanceof $ACC.m.CodeHelpItHelp){
+                content = content.widget();
+            }
             t.d.$askForItHelpBoxTrTd2.html(content);
             t.d.$mainBoxElementsAskForItHelp.removeClass('automizy-hide');
             return t;
