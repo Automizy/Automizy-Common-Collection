@@ -15,6 +15,7 @@ require([
     "js/modules/codeHelp",
     "js/modules/codeHelpItHelp",
     "js/modules/codeHelpScriptInsertion",
+    "js/modules/codeHelpAutodetectScriptInsertion",
     "js/modules/codeHelpUnbounceIntegration",
 
     "js/elements/layout"

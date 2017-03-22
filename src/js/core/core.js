@@ -1,4 +1,5 @@
 define([], function () {
+    window.AutomizyGlobalPlugins = window.AutomizyGlobalPlugins || {i:0};
     window.AutomizyCommonCollection = window.$ACC = new function () {
         var t = this;
         t.version = '0.1.1';
