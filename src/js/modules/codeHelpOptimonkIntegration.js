@@ -18,7 +18,7 @@ define([
 
             var $buttonRow = $('<div style="width: 100%; text-align: center;">');
 
-            var $content = $('<div>')
+            var $content = $('<div style="padding: 10px;">')
                 .append('<p>' + $A.translate('Well targeted pop-ups on your web pages can be a very effective way of collecting leads. Optimonk is just the right tool to get started with that!') + '</p>')
                 .append('<p>' + $A.translate('This is the reason we provide you this native integration with Optimonk!') + '</p>')
                 .append('<h3>' + $A.translate('How?') + '</h3>')
