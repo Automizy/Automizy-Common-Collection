@@ -978,6 +978,127 @@
 
 (function(){
     $ACC.pluginsLoaded(function () {
+        var CodeHelpZapierIntegration = function () {
+            var t = this;
+            t.d = {};
+
+
+            var $list = $('<ol>')
+                .append('<li><a href="https://zapier.com/developer/invite/56758/c26960a977765afe84058228493d7ef4/" target="_blank">' + $A.translate('Click this link') + '</a>' + ' ' + $A.translate('to receive an Automizy invitation for Zapier (Zapier allows public integration only after a specific volume of usage, therefore you can access the integration from this link only yet).') + '</li>')
+                .append('<li>' + $A.translate('Log in to your Zapier account') + '</li>')
+                .append('<li>' + $A.translate('Use Automizy as a trigger or as an action') + '</li>');
+
+            var $buttonRow = $('<div style="width: 100%; text-align: center;">');
+
+            var $content = $('<div>')
+                .append('<p>' + $A.translate('There are tons of apps like CRM, webinar, sales outreach, payment and other tools out there. Zapier makes easy to integrate these apps with each other without any need of programming.') + '</p>')
+                .append('<p>' + $A.translate('We support Zapier integration to let you seamlessly connect your existing apps with us.') + '</p>')
+                .append('<h3>' + $A.translate('How?') + '</h3>')
+                .append('<p>' + $A.translate('Follow the steps below:') + '</p>')
+                .append($list)
+                .append($buttonRow);
+
+
+            var inviteButton = $A.newButton({
+                text: $A.translate('Invite me to Zapier'),
+                click: function () {
+                    window.open('https://zapier.com/developer/invite/56758/c26960a977765afe84058228493d7ef4/');
+                },
+                skin: 'simple-orange',
+                target: $buttonRow,
+                thick: true
+            });
+
+
+            t.d.zapierIntegration = $ACC.newCodeHelp()
+                .title($A.translate('Connect Automizy with the apps you already use!'));
+            t.d.zapierIntegration.d.$mainBoxDescription.append($content);
+
+        };
+
+        var p = CodeHelpZapierIntegration.prototype;
+
+        p.open = function () {
+            var t = this;
+            t.d.zapierIntegration.open();
+            return t;
+        };
+
+        $ACC.m.CodeHelpZapierIntegration = CodeHelpZapierIntegration;
+        $ACC.newCodeHelpZapierIntegration = function () {
+            return new $ACC.m.CodeHelpZapierIntegration();
+        };
+
+        $ACC.modules.zapierIntegration = $ACC.newCodeHelpZapierIntegration();
+
+        return $ACC.m.CodeHelpZapierIntegration;
+    });
+})();
+
+(function(){
+    $ACC.pluginsLoaded(function () {
+        var CodeHelpOptimonkIntegration = function () {
+            var t = this;
+            t.d = {};
+
+
+            var $list = $('<ol>')
+                .append('<li>'+$A.translate('Create or log in to your account in')+' '+'<a href="http://www.optimonk.com/" target="_blank">Optimonk</a></li>')
+                .append('<li>' + $A.translate('Create a new pop-up or nanobar campaign there') + '</li>')
+                .append('<li>' + $A.translate('In the “Campaign settings”, scroll down to the integrations section') + '</li>')
+                .append('<li>' + $A.translate('Click “Where would you like to keep the list of subscribers?“') + '</li>')
+                .append('<li>' + $A.translate('Choose Automizy') + '</li>')
+                .append('<li>' + $A.translate('Log in to Automizy') + '</li>');
+
+            var $buttonRow = $('<div style="width: 100%; text-align: center;">');
+
+            var $content = $('<div style="padding: 10px;">')
+                .append('<p>' + $A.translate('Well targeted pop-ups on your web pages can be a very effective way of collecting leads. Optimonk is just the right tool to get started with that!') + '</p>')
+                .append('<p>' + $A.translate('This is the reason we provide you this native integration with Optimonk!') + '</p>')
+                .append('<h3>' + $A.translate('How?') + '</h3>')
+                .append('<p>' + $A.translate('Follow the steps below:') + '</p>')
+                .append($list)
+                .append($buttonRow);
+
+
+            var inviteButton = $A.newButton({
+                text: $A.translate('Connect with Optimonk'),
+                click: function () {
+                    window.open('http://www.optimonk.com/');
+                },
+                skin: 'simple-orange',
+                target: $buttonRow,
+                thick: true
+            });
+
+
+            t.d.optimonkIntegration = $ACC.newCodeHelp()
+                .title($A.translate('Collect leads with on-site retargeting and send them straight to Automizy!'));
+            t.d.optimonkIntegration.d.$mainBoxDescription.append($content);
+
+        };
+
+        var p = CodeHelpOptimonkIntegration.prototype;
+
+        p.open = function () {
+            var t = this;
+            t.d.optimonkIntegration.open();
+            return t;
+        };
+
+        $ACC.m.CodeHelpOptimonkIntegration = CodeHelpOptimonkIntegration;
+        $ACC.newCodeHelpOptimonkIntegration = function () {
+            return new $ACC.m.CodeHelpOptimonkIntegration();
+        };
+
+        $ACC.modules.optimonkIntegration = $ACC.newCodeHelpOptimonkIntegration();
+
+        return $ACC.m.CodeHelpOptimonkIntegration;
+    });
+})();
+
+(function(){
+    $ACC.pluginsLoaded(function () {
         $ACC.$tmp = $('<div id="automizy-common-collection-tmp"></div>');
 
         $ACC.layoutReady();

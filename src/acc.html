@@ -45,6 +45,14 @@
                         $ACC.modules.unbounceIntegration.open();
                     }).appendTo('body');
 
+                    $('<button></button>').text('zapierIntegration').click(function(){
+                        $ACC.newCodeHelpZapierIntegration().open();
+                    }).appendTo('body');
+
+                    $('<button></button>').text('optimonkIntegration').click(function(){
+                        $ACC.newCodeHelpOptimonkIntegration().open();
+                    }).appendTo('body');
+
                 })
 
             })
