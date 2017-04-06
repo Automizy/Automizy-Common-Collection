@@ -3,6 +3,7 @@
     <meta charset="UTF-8">
     <link rel="stylesheet" type="text/css" href="acc.css">
     <script src="vendor/requirejs/require.js"></script>
+    <script src="vendor/automizy-project-initializer/automizy-project-initializer.js"></script>
     <script src="acc.js"></script>
     <script>
 
@@ -23,8 +24,7 @@
         */
 
         require([
-            "js/core/init",
-            "js/events/ready"
+            "js/init/init"
         ], function () {
             $ACC.init().ready(function () {
 

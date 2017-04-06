@@ -39,6 +39,7 @@
     "jquery": "2.*",
 	"requirejs": "https://github.com/jrburke/requirejs.git#master",
 	"fontawesome": "*",
+    "automizy-project-initializer": "*",
     "automizy-js": "*",
     "automizy-js-api": "*"
   }

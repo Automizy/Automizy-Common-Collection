@@ -1,5 +1,5 @@
 define([
-    "js/core/core",
+    "js/init/init",
     "js/modules/codeHelp",
     "js/modules/codeHelpItHelp"
 ], function () {

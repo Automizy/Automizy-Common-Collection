@@ -1,5 +1,5 @@
 define([
-    "js/core/core"
+    "js/init/init"
 ], function () {
     $ACC.pluginsLoaded(function () {
         var CodeHelpItHelp = function () {

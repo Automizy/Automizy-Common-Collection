@@ -1,7 +1,5 @@
 define([
-    "js/core/core",
-    "js/events/pluginsLoaded",
-    "js/events/layoutReady"
+    "js/init/init"
 ], function () {
     $ACC.pluginsLoaded(function () {
         $ACC.$tmp = $('<div id="automizy-common-collection-tmp"></div>');
