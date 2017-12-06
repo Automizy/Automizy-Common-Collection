@@ -44,7 +44,11 @@ define([
             text: $A.translate('Still have problem? Contact us!'),
             skin: 'nobox-orange',
             click: function () {
-                Intercom('showNewMessage');
+                if (typeof fcWidget !== 'undefined') {
+                    fcWidget.open({name: "Automizy Support"});
+                } else if (typeof Intercom !== 'undefined') {
+                    Intercom('showNewMessage');
+                }
             },
             target: t.d.$mainBox
         });
