@@ -36,7 +36,7 @@ define([
                 .email('ithelp-autodetect-script-en')
                 .subject($A.translate("Help me connect Automizy with our webpage please"))
                 .fields({
-                    hash: t.hash()
+                    hash: t.hash() || '<HASH>'
                 });
 
             t.d.scriptInsertion = $ACC.newCodeHelp()

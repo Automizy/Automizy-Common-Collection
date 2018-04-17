@@ -9,7 +9,7 @@ define([
 
 
             var $list = $('<ol>')
-                .append('<li><a href="https://zapier.com/developer/invite/56758/c26960a977765afe84058228493d7ef4/" target="_blank">' + $A.translate('Click this link') + '</a>' + ' ' + $A.translate('to receive an Automizy invitation for Zapier (Zapier allows public integration only after a specific volume of usage, therefore you can access the integration from this link only yet).') + '</li>')
+                .append('<li><a href="https://zapier.com/platform/public-invite/3792/9a1929c48ad8bb3db19611369b081833/" target="_blank">' + $A.translate('Click this link') + '</a>' + ' ' + $A.translate('to receive an Automizy invitation for Zapier (Zapier allows public integration only after a specific volume of usage, therefore you can access the integration from this link only yet).') + '</li>')
                 .append('<li>' + $A.translate('Log in to your Zapier account') + '</li>')
                 .append('<li>' + $A.translate('Use Automizy as a trigger or as an action') + '</li>');
 
@@ -27,7 +27,7 @@ define([
             var inviteButton = $A.newButton({
                 text: $A.translate('Invite me to Zapier'),
                 click: function () {
-                    window.open('https://zapier.com/developer/invite/56758/c26960a977765afe84058228493d7ef4/');
+                    window.open('https://zapier.com/platform/public-invite/3792/9a1929c48ad8bb3db19611369b081833/');
                 },
                 skin: 'simple-orange',
                 target: $buttonRow,
